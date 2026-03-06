@@ -91,7 +91,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         # Public paths — no auth needed
-        if path in PUBLIC_PATHS:
+        if path in PUBLIC_PATHS or path.startswith("/static/"):
             return await call_next(request)
 
         # Get session from cookie
