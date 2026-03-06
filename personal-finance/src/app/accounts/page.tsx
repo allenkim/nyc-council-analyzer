@@ -7,6 +7,7 @@ import SyncButton from "@/components/SyncButton";
 import AddAccountForm from "./AddAccountForm";
 import AddHoldingForm from "./AddHoldingForm";
 import DeleteButton from "./DeleteButton";
+import CollapsibleHoldings from "./CollapsibleHoldings";
 
 export const dynamic = "force-dynamic";
 
@@ -33,14 +34,14 @@ export default async function AccountsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold">Accounts</h2>
           <p className="text-muted text-sm mt-1">
             Manage your accounts and holdings
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {hasConnections && <SyncButton />}
           <PlaidLinkButton />
           <SnapTradeLinkButton />
@@ -139,9 +140,8 @@ export default async function AccountsPage() {
                   )}
                 </div>
 
-                <div className="border-t border-card-border pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-muted">Holdings</h4>
+                <CollapsibleHoldings holdingCount={account.holdings.length}>
+                  <div className="flex items-center justify-end mb-3">
                     {account.plaidItem && (
                       <SyncButton
                         plaidItemId={account.plaidItem.id}
@@ -164,7 +164,7 @@ export default async function AccountsPage() {
                       <AddHoldingForm accountId={account.id} />
                     </div>
                   )}
-                </div>
+                </CollapsibleHoldings>
               </div>
             );
           })}

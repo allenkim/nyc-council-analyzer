@@ -35,8 +35,8 @@ export default function SpendingChart({ data, total }: SpendingChartProps) {
   }));
 
   return (
-    <div className="flex items-center gap-8">
-      <div className="w-48 h-48">
+    <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+      <div className="w-40 h-40 sm:w-48 sm:h-48 flex-shrink-0">
         {mounted ? (
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -44,8 +44,8 @@ export default function SpendingChart({ data, total }: SpendingChartProps) {
               data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={50}
-              outerRadius={80}
+              innerRadius={40}
+              outerRadius={70}
               paddingAngle={2}
               dataKey="value"
             >
@@ -65,21 +65,21 @@ export default function SpendingChart({ data, total }: SpendingChartProps) {
             />
           </PieChart>
         </ResponsiveContainer>
-        ) : <div className="w-48 h-48" />}
+        ) : <div className="w-40 h-40 sm:w-48 sm:h-48" />}
       </div>
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 w-full space-y-2">
         {data.slice(0, 6).map((entry) => (
           <div key={entry.category} className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <div
-                className="w-3 h-3 rounded-full"
+                className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: entry.color }}
               />
-              <span>{entry.label}</span>
+              <span className="truncate">{entry.label}</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0">
               <span className="text-muted">{entry.percent.toFixed(1)}%</span>
-              <span className="font-medium w-24 text-right">{formatCurrency(entry.amount)}</span>
+              <span className="font-medium w-20 sm:w-24 text-right">{formatCurrency(entry.amount)}</span>
             </div>
           </div>
         ))}

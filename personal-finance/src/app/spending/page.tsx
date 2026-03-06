@@ -106,7 +106,7 @@ export default async function SpendingPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold">Spending</h2>
           <p className="text-muted text-sm mt-1">
@@ -161,24 +161,24 @@ export default async function SpendingPage() {
             <div className="space-y-3">
               {categoryData.map((cat) => (
                 <div key={cat.category}>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-between text-sm mb-1 gap-x-4 gap-y-1">
+                    <div className="flex items-center gap-2 min-w-0">
                       <div
-                        className="w-3 h-3 rounded-full"
+                        className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: cat.color }}
                       />
-                      <span className="font-medium">{cat.label}</span>
+                      <span className="font-medium truncate">{cat.label}</span>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className={`text-xs ${cat.change > 10 ? "text-danger" : cat.change < -10 ? "text-success" : "text-muted"}`}>
+                    <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                      <span className={`text-xs hidden sm:inline ${cat.change > 10 ? "text-danger" : cat.change < -10 ? "text-success" : "text-muted"}`}>
                         {cat.lastMonth > 0 && (
                           <>
                             {cat.change > 0 ? "↑" : cat.change < 0 ? "↓" : ""}
-                            {Math.abs(cat.change).toFixed(0)}% vs last month
+                            {Math.abs(cat.change).toFixed(0)}%
                           </>
                         )}
                       </span>
-                      <span className="font-semibold w-24 text-right">
+                      <span className="font-semibold w-20 sm:w-24 text-right">
                         {formatCurrency(cat.amount)}
                       </span>
                     </div>

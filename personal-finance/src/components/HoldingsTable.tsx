@@ -26,8 +26,8 @@ export default function HoldingsTable({ holdings, totalValue }: HoldingsTablePro
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto -mx-2 px-2">
+      <table className="w-full text-sm min-w-[640px]">
         <thead>
           <tr className="border-b border-card-border text-left text-muted">
             <th className="pb-3 font-medium">Name</th>

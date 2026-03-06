@@ -42,7 +42,7 @@ export default function NetWorthHistory({ data }: NetWorthHistoryProps) {
   return (
     <div className="bg-card border border-card-border rounded-xl p-6">
       <h3 className="text-sm font-medium text-muted mb-4">Net Worth Over Time</h3>
-      <div className="h-64">
+      <div className="h-48 sm:h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />

@@ -48,7 +48,9 @@ export default async function DashboardPage() {
         <div>
           <h3 className="text-sm font-medium text-muted mb-3">Accounts</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accounts.map((account) => (
+            {accounts
+              .filter((a) => a.holdings.reduce((sum, h) => sum + h.value, 0) > 0)
+              .map((account) => (
               <AccountCard
                 key={account.id}
                 name={account.name}
@@ -59,6 +61,27 @@ export default async function DashboardPage() {
               />
             ))}
           </div>
+          {accounts.some((a) => a.holdings.reduce((sum, h) => sum + h.value, 0) === 0) && (
+            <details className="mt-4">
+              <summary className="cursor-pointer text-sm text-muted hover:text-foreground transition-colors">
+                {accounts.filter((a) => a.holdings.reduce((sum, h) => sum + h.value, 0) === 0).length} accounts with $0 balance
+              </summary>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3 opacity-60">
+                {accounts
+                  .filter((a) => a.holdings.reduce((sum, h) => sum + h.value, 0) === 0)
+                  .map((account) => (
+                  <AccountCard
+                    key={account.id}
+                    name={account.name}
+                    institution={account.institution}
+                    type={account.type}
+                    totalValue={0}
+                    holdingCount={account.holdings.length}
+                  />
+                ))}
+              </div>
+            </details>
+          )}
         </div>
       ) : (
         <div className="bg-card border border-card-border rounded-xl p-8 text-center">

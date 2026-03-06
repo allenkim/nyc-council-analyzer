@@ -67,10 +67,11 @@ export default function AddBillForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Bill Name</label>
+          <label htmlFor="bill-name" className="block text-sm font-medium mb-1">Bill Name</label>
           <input
+            id="bill-name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -80,8 +81,9 @@ export default function AddBillForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Amount</label>
+          <label htmlFor="bill-amount" className="block text-sm font-medium mb-1">Amount</label>
           <input
+            id="bill-amount"
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -93,8 +95,9 @@ export default function AddBillForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Due Day</label>
+          <label htmlFor="bill-due-day" className="block text-sm font-medium mb-1">Due Day</label>
           <input
+            id="bill-due-day"
             type="number"
             value={dueDay}
             onChange={(e) => setDueDay(e.target.value)}
@@ -106,8 +109,9 @@ export default function AddBillForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Category</label>
+          <label htmlFor="bill-category" className="block text-sm font-medium mb-1">Category</label>
           <select
+            id="bill-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-sm"
