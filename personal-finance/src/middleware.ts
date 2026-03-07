@@ -1,11 +1,10 @@
-import NextAuth from "next-auth";
-import { authConfig } from "@/lib/auth.config";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { ALLOWED_EMAILS } from "@/lib/allowlist";
 
-const { auth } = NextAuth(authConfig);
-
-export default auth((req) => {
-  const pathname = new URL(req.url).pathname;
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
   // Allow auth API routes and login page without session
   if (
@@ -14,21 +13,19 @@ export default auth((req) => {
     pathname === "/login" ||
     pathname === "/finance/login"
   ) {
-    return;
+    return NextResponse.next();
   }
 
-  const email = req.auth?.user?.email;
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const email = token?.email as string | undefined;
 
-  // Not signed in — redirect to login
-  if (!email) {
-    return Response.redirect(new URL("/finance/login", req.url));
+  if (!email || !ALLOWED_EMAILS.includes(email)) {
+    const loginUrl = new URL("/finance/login", req.url);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Signed in but not on allowlist
-  if (!ALLOWED_EMAILS.includes(email)) {
-    return new Response("Access denied", { status: 403 });
-  }
-});
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: ["/", "/((?!_next/static|_next/image|favicon.ico).*)"],
