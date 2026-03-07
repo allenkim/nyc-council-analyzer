@@ -9,17 +9,6 @@ const CACHE_TTL_MS = 30_000; // 30 seconds
 const FETCH_TIMEOUT_MS = 5_000; // 5 seconds
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Skip static assets
-  if (
-    pathname.includes("/_next/static") ||
-    pathname.includes("/_next/image") ||
-    pathname.endsWith("/favicon.ico")
-  ) {
-    return NextResponse.next();
-  }
-
   const sessionToken = request.cookies.get("session")?.value;
 
   if (!sessionToken) {
@@ -87,5 +76,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/finance/:path*",
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
