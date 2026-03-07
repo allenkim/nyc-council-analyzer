@@ -16,7 +16,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET, secureCookie: true });
   const email = token?.email as string | undefined;
 
   if (!email || !ALLOWED_EMAILS.includes(email)) {
