@@ -51,7 +51,7 @@ export default async function BudgetsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Budget Goals</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">Budget Goals</h2>
           <p className="text-muted text-sm mt-1">
             Set monthly spending limits by category
           </p>
@@ -84,9 +84,15 @@ export default async function BudgetsPage() {
 
       {/* Budget list */}
       {budgetsWithSpending.length === 0 ? (
-        <div className="bg-card border border-card-border rounded-xl p-8 text-center">
+        <div className="bg-card border border-card-border rounded-xl p-12 text-center">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
+            <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p className="text-foreground font-medium mb-1">No budget goals set</p>
           <p className="text-muted text-sm">
-            No budget goals yet. Add your first budget above.
+            Add your first budget above to start tracking spending against your limits.
           </p>
         </div>
       ) : (
@@ -118,9 +124,9 @@ export default async function BudgetsPage() {
                   <DeleteBudgetButton id={budget.id} category={budget.category} />
                 </div>
               </div>
-              <div className="w-full bg-card-border rounded-full h-2">
+              <div className="w-full bg-card-border rounded-full h-3">
                 <div
-                  className={`h-2 rounded-full transition-all ${
+                  className={`h-3 rounded-full transition-all ${
                     budget.percentUsed >= 100
                       ? "bg-danger"
                       : budget.percentUsed >= 80

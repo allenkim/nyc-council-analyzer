@@ -6,20 +6,164 @@
     <title>Portal — Whatisms</title>
     <link rel="stylesheet" href="/static/css/pages.css">
     <style>
-        .section-title { font-size: 1.1rem; color: #8b949e; margin-bottom: 20px; font-weight: 400; }
-        .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-        .project-tile {
-            background: #161b22; border: 1px solid #30363d; border-radius: 10px;
-            padding: 24px; text-decoration: none; color: inherit;
-            transition: border-color 0.2s, transform 0.15s; display: block;
+        body {
+            background: #0b0e14;
+            min-height: 100vh;
         }
-        .project-tile:hover { border-color: #4f8ff7; transform: translateY(-2px); }
-        .project-tile h3 { font-size: 1.1rem; color: #f0f6fc; margin-bottom: 8px; }
-        .project-tile p { font-size: 0.875rem; color: #8b949e; line-height: 1.5; }
+
+        .portal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            background: rgba(19, 23, 32, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid #252d3a;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .portal-header h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #e6edf3;
+            letter-spacing: -0.02em;
+        }
+
+        .portal-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 64px 32px;
+        }
+
+        .portal-greeting {
+            margin-bottom: 48px;
+        }
+
+        .portal-greeting h2 {
+            font-size: 2rem;
+            font-weight: 300;
+            color: #e6edf3;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+        }
+
+        .portal-greeting h2 strong {
+            font-weight: 600;
+        }
+
+        .portal-greeting p {
+            color: #7d8ba0;
+            font-size: 0.95rem;
+            margin-top: 8px;
+        }
+
+        .section-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #5b8def;
+            margin-bottom: 16px;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .project-tile {
+            position: relative;
+            background: #131720;
+            border: 1px solid #252d3a;
+            border-radius: 16px;
+            padding: 28px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow: hidden;
+        }
+
+        .project-tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--tile-accent, #5b8def), transparent);
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+
+        .project-tile:hover {
+            border-color: #3d4b63;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .project-tile:hover::before {
+            opacity: 1;
+        }
+
+        .project-tile .tile-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .project-tile h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e6edf3;
+            letter-spacing: -0.01em;
+        }
+
+        .project-tile p {
+            font-size: 0.875rem;
+            color: #7d8ba0;
+            line-height: 1.6;
+        }
+
+        .tile-arrow {
+            color: #3d4b63;
+            transition: all 0.25s;
+            margin-left: auto;
+        }
+
+        .project-tile:hover .tile-arrow {
+            color: #5b8def;
+            transform: translateX(3px);
+        }
+
+        @media (max-width: 640px) {
+            .portal-container {
+                padding: 32px 20px;
+            }
+
+            .portal-greeting h2 {
+                font-size: 1.5rem;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class="portal-header">
         <h1>Whatisms</h1>
         <div class="header-actions">
             <span id="user-display"></span>
@@ -28,8 +172,13 @@
             <button class="btn-danger" id="signout-btn">Sign Out</button>
         </div>
     </div>
-    <div class="container">
-        <div class="section-title">Your Projects</div>
+
+    <div class="portal-container">
+        <div class="portal-greeting">
+            <h2>Welcome back<span id="greeting-name"></span></h2>
+            <p>Select a project to get started.</p>
+        </div>
+        <div class="section-label">Your Projects</div>
         <div class="projects-grid" id="projects-grid">
             <div class="loading"><span class="spinner"></span>Loading projects...</div>
         </div>
@@ -65,6 +214,17 @@
     <script>
         let currentUser = null;
 
+        const projectIcons = {
+            'district2': { emoji: '🗽', bg: 'rgba(91, 141, 239, 0.12)', accent: '#5b8def' },
+            'finance': { emoji: '💰', bg: 'rgba(63, 185, 80, 0.12)', accent: '#3fb950' },
+        };
+
+        function getProjectIcon(path) {
+            if (path.includes('district')) return projectIcons['district2'];
+            if (path.includes('finance')) return projectIcons['finance'];
+            return { emoji: '📁', bg: 'rgba(125, 139, 160, 0.12)', accent: '#7d8ba0' };
+        }
+
         async function loadPortal() {
             const resp = await fetch('/auth/me');
             if (!resp.ok) { window.location.href = '/login'; return; }
@@ -73,6 +233,11 @@
             const projects = data.projects;
 
             document.getElementById('user-display').textContent = currentUser.username;
+            const nameEl = document.getElementById('greeting-name');
+            if (currentUser.username) {
+                const name = currentUser.username.charAt(0).toUpperCase() + currentUser.username.slice(1);
+                nameEl.textContent = ', ' + name;
+            }
             if (currentUser.role === 'admin') {
                 document.getElementById('admin-link').classList.remove('hidden');
             }
@@ -80,14 +245,27 @@
             const grid = document.getElementById('projects-grid');
             grid.innerHTML = '';
             for (const p of projects) {
+                const icon = getProjectIcon(p.path);
                 const tile = document.createElement('a');
                 tile.href = p.path;
                 tile.className = 'project-tile';
-                tile.innerHTML = `<h3>${esc(p.name)}</h3><p>${esc(p.description || '')}</p>`;
+                tile.style.setProperty('--tile-accent', icon.accent);
+                tile.innerHTML = `
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div class="tile-icon" style="background:${icon.bg}">${icon.emoji}</div>
+                        <svg class="tile-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>${esc(p.name)}</h3>
+                        <p>${esc(p.description || '')}</p>
+                    </div>
+                `;
                 grid.appendChild(tile);
             }
             if (projects.length === 0) {
-                grid.innerHTML = '<p style="color:#8b949e">No projects assigned. Contact an admin.</p>';
+                grid.innerHTML = '<p style="color:#7d8ba0">No projects assigned. Contact an admin.</p>';
             }
         }
 

@@ -35,7 +35,7 @@ export default async function BreakdownPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Breakdown</h2>
+        <h2 className="text-3xl font-semibold tracking-tight">Breakdown</h2>
         <p className="text-muted text-sm mt-1">
           Detailed view of your asset allocation
         </p>
@@ -76,9 +76,9 @@ export default async function BreakdownPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="w-full bg-card-border rounded-full h-2">
+                  <div className="w-full bg-card-border rounded-full h-3">
                     <div
-                      className="h-2 rounded-full transition-all"
+                      className="h-3 rounded-full transition-all"
                       style={{
                         width: `${cat.percent}%`,
                         backgroundColor: cat.color,

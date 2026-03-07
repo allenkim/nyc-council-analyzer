@@ -23,7 +23,7 @@ export default async function HistoryPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">History</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">History</h2>
           <p className="text-muted text-sm mt-1">
             Track your net worth over time
           </p>

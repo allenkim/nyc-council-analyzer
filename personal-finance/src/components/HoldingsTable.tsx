@@ -27,19 +27,19 @@ export default function HoldingsTable({ holdings, totalValue }: HoldingsTablePro
 
   return (
     <div className="overflow-x-auto -mx-2 px-2">
-      <table className="w-full text-sm min-w-[640px]">
+      <table className="w-full text-sm min-w-[700px]">
         <thead>
-          <tr className="border-b border-card-border text-left text-muted">
+          <tr className="border-b border-card-border text-left text-muted text-xs uppercase tracking-wider">
             <th className="pb-3 font-medium">Name</th>
-            <th className="pb-3 font-medium">Category</th>
-            <th className="pb-3 font-medium text-right">Quantity</th>
-            <th className="pb-3 font-medium text-right">Price</th>
-            <th className="pb-3 font-medium text-right">Value</th>
-            <th className="pb-3 font-medium text-right">Gain/Loss</th>
-            <th className="pb-3 font-medium text-right">% of Total</th>
+            <th className="pb-3 font-medium pl-4">Category</th>
+            <th className="pb-3 font-medium text-right pl-4">Quantity</th>
+            <th className="pb-3 font-medium text-right pl-4">Price</th>
+            <th className="pb-3 font-medium text-right pl-4">Value</th>
+            <th className="pb-3 font-medium text-right pl-4">Gain/Loss</th>
+            <th className="pb-3 font-medium text-right pl-4">% of Total</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-card-border">
+        <tbody className="divide-y divide-card-border/50">
           {holdings.map((holding) => (
             <tr key={holding.id} className="hover:bg-accent-light/30 transition-colors">
               <td className="py-3">
@@ -50,7 +50,7 @@ export default function HoldingsTable({ holdings, totalValue }: HoldingsTablePro
                   )}
                 </div>
               </td>
-              <td className="py-3">
+              <td className="py-3 pl-4">
                 <span className="inline-flex items-center gap-1.5">
                   <span
                     className="w-2 h-2 rounded-full"
@@ -59,10 +59,10 @@ export default function HoldingsTable({ holdings, totalValue }: HoldingsTablePro
                   {CATEGORY_LABELS[holding.category] || holding.category}
                 </span>
               </td>
-              <td className="py-3 text-right tabular-nums">{holding.quantity.toLocaleString()}</td>
-              <td className="py-3 text-right tabular-nums">{formatCurrencyExact(holding.price)}</td>
-              <td className="py-3 text-right font-medium tabular-nums">{formatCurrencyExact(holding.value)}</td>
-              <td className="py-3 text-right tabular-nums">
+              <td className="py-3 text-right tabular-nums pl-4">{holding.quantity.toLocaleString()}</td>
+              <td className="py-3 text-right tabular-nums pl-4">{formatCurrencyExact(holding.price)}</td>
+              <td className="py-3 text-right font-medium tabular-nums pl-4">{formatCurrencyExact(holding.value)}</td>
+              <td className="py-3 text-right tabular-nums pl-4">
                 {holding.totalCostBasis && holding.totalCostBasis > 0 ? (
                   <span className={holding.gainLoss && holding.gainLoss >= 0 ? "text-success" : "text-danger"}>
                     {holding.gainLoss && holding.gainLoss >= 0 ? "+" : ""}
@@ -76,7 +76,7 @@ export default function HoldingsTable({ holdings, totalValue }: HoldingsTablePro
                   <span className="text-muted">—</span>
                 )}
               </td>
-              <td className="py-3 text-right text-muted tabular-nums">
+              <td className="py-3 text-right text-muted tabular-nums pl-4">
                 {totalValue > 0 ? ((holding.value / totalValue) * 100).toFixed(1) : 0}%
               </td>
             </tr>

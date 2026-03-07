@@ -32,7 +32,7 @@ export default async function DashboardPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Dashboard</h2>
+        <h2 className="text-3xl font-semibold tracking-tight">Dashboard</h2>
         <p className="text-muted text-sm mt-1">Overview of your portfolio</p>
       </div>
 

@@ -40,9 +40,9 @@ export default function AllocationChart({ data }: AllocationChartProps) {
 
   return (
     <div className="bg-card border border-card-border rounded-xl p-6">
-      <h3 className="text-sm font-medium text-muted mb-4">Asset Allocation</h3>
-      <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
-        <div className="w-40 h-40 sm:w-48 sm:h-48 flex-shrink-0">
+      <h3 className="text-xs font-semibold tracking-widest uppercase text-muted/60 mb-4">Asset Allocation</h3>
+      <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10">
+        <div className="w-44 h-44 sm:w-52 sm:h-52 flex-shrink-0">
           {mounted ? (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -50,8 +50,8 @@ export default function AllocationChart({ data }: AllocationChartProps) {
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={40}
-                outerRadius={70}
+                innerRadius={45}
+                outerRadius={80}
                 paddingAngle={2}
                 dataKey="value"
               >
@@ -71,7 +71,7 @@ export default function AllocationChart({ data }: AllocationChartProps) {
               />
             </PieChart>
           </ResponsiveContainer>
-          ) : <div className="w-40 h-40 sm:w-48 sm:h-48" />}
+          ) : <div className="w-44 h-44 sm:w-52 sm:h-52" />}
         </div>
         <div className="flex-1 w-full space-y-2">
           {chartData.map((entry) => (

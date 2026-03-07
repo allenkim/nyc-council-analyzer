@@ -42,7 +42,7 @@ export default async function BillsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Bill Reminders</h2>
+          <h2 className="text-3xl font-semibold tracking-tight">Bill Reminders</h2>
           <p className="text-muted text-sm mt-1">
             Track your recurring bills and due dates
           </p>
@@ -139,9 +139,15 @@ export default async function BillsPage() {
       )}
 
       {bills.length === 0 && (
-        <div className="bg-card border border-card-border rounded-xl p-8 text-center">
+        <div className="bg-card border border-card-border rounded-xl p-12 text-center">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
+            <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+          <p className="text-foreground font-medium mb-1">No bills tracked yet</p>
           <p className="text-muted text-sm">
-            No bills added yet. Add your first bill above.
+            Add your recurring bills above to stay on top of due dates and payments.
           </p>
         </div>
       )}

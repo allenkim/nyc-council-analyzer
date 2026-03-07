@@ -19,6 +19,16 @@ const TYPE_ICONS: Record<string, string> = {
   OTHER: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
 };
 
+const TYPE_COLORS: Record<string, string> = {
+  BANK: "#22c55e",
+  BROKERAGE: "#6366f1",
+  CREDIT: "#f59e0b",
+  LOAN: "#ef4444",
+  CRYPTO_EXCHANGE: "#f97316",
+  REAL_ESTATE: "#ec4899",
+  OTHER: "#8b949e",
+};
+
 // Normalize Plaid account types to our display types
 function normalizeType(type: string): string {
   const upper = type.toUpperCase();
@@ -49,14 +59,18 @@ export default function AccountCard({
 }: AccountCardProps) {
   const displayType = normalizeType(type);
   const icon = TYPE_ICONS[displayType] || TYPE_ICONS.OTHER;
+  const borderColor = TYPE_COLORS[displayType] || TYPE_COLORS.OTHER;
   const displayName = cleanName(name);
 
   const content = (
     <>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-lg bg-accent-light flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} aria-hidden="true">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: `${borderColor}15` }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke={borderColor} viewBox="0 0 24 24" strokeWidth={1.5} aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
             </svg>
           </div>
@@ -65,13 +79,16 @@ export default function AccountCard({
             <p className="text-xs text-muted">{institution}</p>
           </div>
         </div>
-        <span className="text-xs px-2 py-1 rounded-full bg-accent-light text-accent font-medium flex-shrink-0">
+        <span
+          className="text-xs px-2 py-1 rounded-full font-medium flex-shrink-0"
+          style={{ backgroundColor: `${borderColor}15`, color: borderColor }}
+        >
           {displayType.replace("_", " ")}
         </span>
       </div>
       <div className="mt-4 flex items-end justify-between">
         <div>
-          <p className="text-2xl font-bold">{formatCurrency(totalValue)}</p>
+          <p className="text-2xl font-semibold tracking-tight">{formatCurrency(totalValue)}</p>
           <p className="text-xs text-muted mt-1">
             {holdingCount} holding{holdingCount !== 1 ? "s" : ""}
           </p>
@@ -85,7 +102,10 @@ export default function AccountCard({
   }
 
   return (
-    <div className="bg-card border border-card-border rounded-xl p-5 hover:border-accent/30 transition-colors">
+    <div
+      className="bg-card border border-card-border rounded-xl p-5 hover:border-accent/30 transition-all hover:shadow-lg hover:shadow-accent/5"
+      style={{ borderLeftWidth: "3px", borderLeftColor: borderColor }}
+    >
       {content}
     </div>
   );
