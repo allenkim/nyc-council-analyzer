@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quizResponses    QuizResponse[]
+  selfieUploads    SelfieUpload[]
+  styleProfiles    StyleProfile[]
+  feedItems        FeedItem[]
+  feedInteractions FeedInteraction[]
+  outfitChecks     OutfitCheck[]
+}
+
+model QuizResponse {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String   // body, lifestyle, preferences, style
+  answers   String   // JSON blob
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@unique([userId, category])
+}
+
+model SelfieUpload {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  driveFileId          String
+  originalFilename     String?
+  analysisResultClaude String?  // JSON: color season, face shape, Kibbe type
+  analysisResultGemini String?  // JSON: same structure
+  createdAt            DateTime @default(now())
+
+  @@index([userId])
+}
+
+model StyleProfile {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileDataClaude String?  // JSON: full Claude-generated profile
+  profileDataGemini String?  // JSON: full Gemini-generated profile
+  mergedProfile     String?  // JSON: synthesized result
+  colorSeason       String?  // e.g., "Soft Autumn"
+  kibbeType         String?
+  styleArchetype    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model FeedItem {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand        String
+  itemName     String
+  description  String
+  category     String   // tops, bottoms, shoes, outerwear, accessories, etc.
+  priceRange   String?
+  sourceUrl    String?  // original external link (metadata)
+  driveFileId  String?  // Google Drive image
+  aiRationale  String?  // why this was suggested
+  batchId      String?  // which generation batch
+  createdAt    DateTime @default(now())
+
+  interactions FeedInteraction[]
+
+  @@index([userId])
+  @@index([batchId])
+}
+
+model FeedInteraction {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedItemId String
+  feedItem   FeedItem @relation(fields: [feedItemId], references: [id], onDelete: Cascade)
+  action     String   // heart, skip, save
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([feedItemId])
+  @@unique([userId, feedItemId])
+}
+
+model OutfitCheck {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  driveFileId     String   // uploaded outfit photo
+  feedbackClaude  String?  // JSON: rating, feedback, suggestions
+  feedbackGemini  String?  // JSON: same structure
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+}
