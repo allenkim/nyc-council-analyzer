@@ -624,42 +624,85 @@ git commit -m "feat(style): add Google Drive integration for persistent image st
 
 ---
 
-### Task 5: User Session Helper
+### Task 5: User Session Helper (Unified Google OAuth)
 
 **Files:**
 - Create: `style-recommender/src/lib/session.ts`
 
-**Step 1: Create session helper**
+**Context:** The site uses unified Google OAuth. Caddy's `forward_auth` gates all routes
+via the finance app's NextAuth (`/finance/api/auth/check`). Unauthenticated users are
+redirected to `/login` before they ever reach the style app. The NextAuth JWT session
+cookie is set on the `whatisms.com` domain, so the style app can read it directly.
 
-This is a placeholder that will integrate with the site-wide Google OAuth once the auth revamp is complete. For now, it provides a stub for development.
+**Step 1: Install next-auth (for `getToken` only)**
+
+```bash
+cd /Users/allen/whatisms/style-recommender
+npm install next-auth
+```
+
+We only need `next-auth` for the `getToken` JWT utility — the style app does NOT run
+its own NextAuth instance or OAuth flow. Caddy + finance handle all of that.
+
+**Step 2: Create session helper**
 
 Create `style-recommender/src/lib/session.ts`:
 
 ```typescript
+import { cookies } from "next/headers";
+import { getToken } from "next-auth/jwt";
 import { prisma } from "./db";
 
-// TODO: Replace with site-wide Google OAuth once auth revamp is complete.
-// For now, uses a header-based approach for development.
-export async function getUser() {
-  // In production, this will come from the site-wide auth layer.
-  // During development, we use a seeded dev user.
-  const devEmail = process.env.DEV_USER_EMAIL || "dev@whatisms.com";
+export type AuthUser = { id: string; email: string; name: string | null };
 
-  let user = await prisma.user.findUnique({ where: { email: devEmail } });
-  if (!user) {
-    user = await prisma.user.create({
-      data: { email: devEmail, name: "Dev User" },
+/**
+ * Get the authenticated user by reading the NextAuth JWT cookie.
+ *
+ * The JWT is set by the finance app's NextAuth on the whatisms.com domain.
+ * Caddy's forward_auth ensures only authenticated requests reach us,
+ * but we still read the JWT to know WHO the user is.
+ *
+ * On first visit, creates a local User record matching the email.
+ */
+export async function getUser(): Promise<AuthUser | null> {
+  try {
+    const token = await getToken({
+      req: {
+        cookies: Object.fromEntries(
+          (await cookies()).getAll().map((c) => [c.name, c.value])
+        ),
+      } as Parameters<typeof getToken>[0]["req"],
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === "production",
     });
+
+    const email = token?.email as string | undefined;
+    if (!email) return null;
+
+    // Upsert: create local user record on first visit
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: { name: (token.name as string) ?? null },
+      create: {
+        email,
+        name: (token.name as string) ?? null,
+        image: (token.picture as string) ?? null,
+      },
+    });
+
+    return { id: user.id, email: user.email, name: user.name };
+  } catch (error) {
+    console.error("Error reading session:", error);
+    return null;
   }
-  return user;
 }
 ```
 
-**Step 2: Commit**
+**Step 3: Commit**
 
 ```bash
-git add style-recommender/src/lib/session.ts
-git commit -m "feat(style): add session helper stub for user identity"
+git add style-recommender/src/lib/session.ts style-recommender/package.json style-recommender/package-lock.json
+git commit -m "feat(style): add session helper using shared NextAuth JWT cookie"
 ```
 
 ---
@@ -1851,22 +1894,45 @@ Update caddy depends_on to include style:
 
 **Step 4: Update Caddyfile**
 
-Add before the default handle block:
+Add a `forward_auth` + `reverse_proxy` block for `/style*`, matching the existing
+pattern for `/finance*`. Insert after the `/finance*` block and before the default
+`handle` block:
 
 ```
+# ── Protected: style app ─────────────────────────────────────────
 handle /style* {
+    forward_auth finance:3000 {
+        uri /finance/api/auth/check
+    }
     reverse_proxy style:3001
 }
 ```
 
-Update CSP to add Google Drive image domain:
+Update CSP to add Google Drive image domain and AI API connect-src:
 
 ```
 img-src 'self' data: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://drive.google.com https://lh3.googleusercontent.com;
 connect-src 'self' https://*.plaid.com https://api.anthropic.com https://generativelanguage.googleapis.com https://www.googleapis.com;
 ```
 
-**Step 5: Create env.example**
+**Step 5: Add Style tile to portal page**
+
+Edit `static/portal.html` to add a third project tile in the `.projects-grid`:
+
+```html
+<a href="/style" class="project-tile" style="--tile-accent: #d2a8ff;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="tile-icon" style="background:rgba(210,168,255,0.12)">&#x1f454;</div>
+        <svg class="tile-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>
+    <div>
+        <h3>Style</h3>
+        <p>AI-powered personal stylist with visual quiz, outfit recommendations, and wardrobe feedback.</p>
+    </div>
+</a>
+```
+
+**Step 6: Create env.example**
 
 Create `style-recommender/env.example`:
 
@@ -1874,22 +1940,22 @@ Create `style-recommender/env.example`:
 ANTHROPIC_API_KEY=
 GEMINI_API_KEY=
 GOOGLE_DRIVE_CREDENTIALS={"type":"service_account","project_id":"..."}
+NEXTAUTH_SECRET=          # Must match the finance app's NEXTAUTH_SECRET
 DATABASE_URL=file:prisma/dev.db
-DEV_USER_EMAIL=dev@whatisms.com
 ```
 
-**Step 6: Verify Docker build**
+**Step 7: Verify Docker build**
 
 ```bash
 cd /Users/allen/whatisms
 docker compose build style
 ```
 
-**Step 7: Commit**
+**Step 8: Commit**
 
 ```bash
-git add style-recommender/Dockerfile style-recommender/.dockerignore style-recommender/env.example docker-compose.yml Caddyfile
-git commit -m "feat(style): add Docker and infrastructure config"
+git add style-recommender/Dockerfile style-recommender/.dockerignore style-recommender/env.example docker-compose.yml Caddyfile static/portal.html
+git commit -m "feat(style): add Docker, Caddy forward_auth, and portal tile"
 ```
 
 ---

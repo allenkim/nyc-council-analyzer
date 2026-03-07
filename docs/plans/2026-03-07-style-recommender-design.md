@@ -201,6 +201,7 @@ style-recommender/        <- new directory in monorepo root
 - `ANTHROPIC_API_KEY`
 - `GEMINI_API_KEY`
 - `GOOGLE_DRIVE_CREDENTIALS` (or reuse OAuth token)
+- `NEXTAUTH_SECRET` (must match the finance app's secret — used to decode JWT cookie)
 
 ### Key Pages
 ```
@@ -216,7 +217,13 @@ Server-side via `@react-pdf/renderer` or similar library.
 
 ## Auth
 
-Not built into this project. Assumes site-wide Google OAuth revamp provides authenticated user identity (email/ID). All data queries scoped by this identity.
+Uses the unified Google OAuth system already in place:
+
+- **Caddy `forward_auth`** gates `/style*` routes via `/finance/api/auth/check`. Unauthenticated users are redirected to `/login` before reaching the style app.
+- **NextAuth JWT cookie** (set by the finance app on `whatisms.com`) is read by the style app using `getToken` from `next-auth/jwt` to identify the user.
+- **Local User record** is created on first visit via upsert (matching email from JWT).
+- **No OAuth config in the style app** — no `GOOGLE_CLIENT_ID`, no login page, no auth routes. Only `NEXTAUTH_SECRET` (shared with finance) is needed to decode the JWT.
+- All data queries scoped by `userId` for multi-user isolation.
 
 ## Deferred Features
 
