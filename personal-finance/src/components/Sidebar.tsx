@@ -61,7 +61,7 @@ export default function Sidebar() {
       >
         <div className="p-6 border-b border-card-border flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-foreground tracking-tight">Finance Tracker</h1>
+            <a href="/" className="text-lg font-bold text-foreground tracking-tight hover:text-accent transition-colors">Finance Tracker</a>
             <p className="text-xs text-muted mt-0.5 tracking-wide uppercase">Personal Portfolio</p>
           </div>
           <button
