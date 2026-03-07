@@ -25,6 +25,8 @@ model User {
   categoryRules        CategoryRule[]
   insights             Insight[]
   snapshots            Snapshot[]
+  profile              UserProfile?
+  advisorRecommendations AdvisorRecommendation[]
 }
 
 model PlaidItem {
@@ -241,4 +243,50 @@ model Insight {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// User financial profile for advisor recommendations
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Required
+  age             Int
+  annualIncome    Float
+  riskTolerance   String   // CONSERVATIVE, MODERATE, AGGRESSIVE
+
+  // Optional
+  filingStatus    String?  // SINGLE, MARRIED_FILING_JOINTLY, MARRIED_FILING_SEPARATELY, HEAD_OF_HOUSEHOLD
+  employmentType  String?  // W2, SELF_EMPLOYED_1099, RETIRED, STUDENT, OTHER
+  stateOfResidence String?
+  employer401kMatch String? // JSON: { "matchPercent": 100, "upToPercent": 6 }
+  dependents      Int?
+  isHomeowner     Boolean?
+  monthlyTakeHome Float?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// AI-powered advisor recommendations
+model AdvisorRecommendation {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        String    // ACCOUNT_STRUCTURE, ALLOCATION, COST_OPTIMIZATION, SPENDING, WHAT_TO_BUY
+  category    String    // For UI grouping
+  title       String
+  summary     String
+  details     String?   // Longer explanation for "Learn more"
+  priority    Int       // 1-10, higher = more impactful
+  isDismissed Boolean   @default(false)
+  dismissedAt DateTime?
+  data        String?   // JSON for structured data
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, isDismissed])
 }
