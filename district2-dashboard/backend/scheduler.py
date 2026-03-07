@@ -89,6 +89,34 @@ async def check_needs_backfill() -> bool:
         return True
 
 
+async def run_catchup():
+    """Run a lightweight catch-up fetch (last 48 hours) for all data sources."""
+    logger.info("Running catch-up fetch (48 hours)...")
+
+    from services.events import (
+        fetch_fdny_incidents, fetch_nypd_complaints, fetch_311_events,
+        fetch_notify_nyc_alerts, fetch_notify_nyc_api, fetch_dob_complaints,
+    )
+    from services.complaints import fetch_911_calls
+    from services.hpd import fetch_hpd_violations, fetch_hpd_complaints
+    from services.news import fetch_news_feeds, fetch_hyperlocal_feeds, fetch_legislation
+
+    await _safe_run("Catchup FDNY", fetch_fdny_incidents(since_hours=48))
+    await _safe_run("Catchup NYPD", fetch_nypd_complaints(since_hours=48))
+    await _safe_run("Catchup 311", fetch_311_events(since_hours=48))
+    await _safe_run("Catchup 911", fetch_911_calls(since_hours=48))
+    await _safe_run("Catchup Notify NYC RSS", fetch_notify_nyc_alerts())
+    await _safe_run("Catchup Notify NYC API", fetch_notify_nyc_api(since_hours=48))
+    await _safe_run("Catchup DOB", fetch_dob_complaints(since_hours=48))
+    await _safe_run("Catchup HPD violations", fetch_hpd_violations(since_days=7))
+    await _safe_run("Catchup HPD complaints", fetch_hpd_complaints(since_days=7))
+    await _safe_run("Catchup news", fetch_news_feeds())
+    await _safe_run("Catchup hyperlocal", fetch_hyperlocal_feeds())
+    await _safe_run("Catchup legislation", fetch_legislation())
+
+    logger.info("Catch-up complete")
+
+
 async def run_backfill():
     """Run initial data backfill."""
     logger.info(f"Running initial backfill ({BACKFILL_MONTHS} months)...")
