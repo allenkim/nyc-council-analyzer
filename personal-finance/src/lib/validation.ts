@@ -162,3 +162,24 @@ export const snapTradeCallbackSchema = z.object({
 export const snapTradeSyncSchema = z.object({
   snapTradeConnectionId: z.string().optional(),
 });
+
+// --- User Profile ---
+
+export const createProfileSchema = z.object({
+  age: z.number().int().min(13).max(120),
+  annualIncome: z.number().min(0),
+  riskTolerance: z.enum(["CONSERVATIVE", "MODERATE", "AGGRESSIVE"]),
+  filingStatus: z.enum(["SINGLE", "MARRIED_FILING_JOINTLY", "MARRIED_FILING_SEPARATELY", "HEAD_OF_HOUSEHOLD"]).optional().nullable(),
+  employmentType: z.enum(["W2", "SELF_EMPLOYED_1099", "RETIRED", "STUDENT", "OTHER"]).optional().nullable(),
+  stateOfResidence: z.string().optional().nullable(),
+  employer401kMatch: z.string().optional().nullable(),
+  dependents: z.number().int().min(0).optional().nullable(),
+  isHomeowner: z.boolean().optional().nullable(),
+  monthlyTakeHome: z.number().min(0).optional().nullable(),
+});
+
+// --- Advisor ---
+
+export const dismissRecommendationSchema = z.object({
+  id: z.string().min(1),
+});
