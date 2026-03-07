@@ -111,14 +111,15 @@ export default function Sidebar() {
           <PrivacyToggle />
           {session?.user && (
             <div className="flex items-center gap-3 px-3 py-2.5">
-              {session.user.image && (
+              {session.user.image ? (
                 <img
                   src={session.user.image}
                   alt=""
                   className="w-6 h-6 rounded-full flex-shrink-0"
                   referrerPolicy="no-referrer"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
-              )}
+              ) : null}
               <span className="text-xs text-muted truncate flex-1">
                 {session.user.email}
               </span>
