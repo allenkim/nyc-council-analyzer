@@ -54,7 +54,7 @@ services:
       - caddy-config:/config
     depends_on:
       district2:
-        condition: service_healthy
+        condition: service_started
       finance:
         condition: service_healthy
     restart: unless-stopped
