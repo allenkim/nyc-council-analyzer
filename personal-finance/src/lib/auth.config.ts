@@ -13,7 +13,10 @@ export const authConfig: NextAuthConfig = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
-  basePath: "/finance/api/auth",
+  // Next.js strips the basePath ("/finance") before the route handler sees the
+  // request, so the handler receives /api/auth/... — match that here.
+  // AUTH_URL env var handles external URL construction (callbacks, redirects).
+  basePath: "/api/auth",
   session: { strategy: "jwt" },
   pages: {
     signIn: "/finance/login",
