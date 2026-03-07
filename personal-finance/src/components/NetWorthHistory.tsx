@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Legend,
 } from "recharts";
 import { formatCurrency } from "@/lib/categories";
 import { format } from "date-fns";
@@ -19,9 +20,10 @@ interface SnapshotData {
 
 interface NetWorthHistoryProps {
   data: SnapshotData[];
+  projectionData?: SnapshotData[];
 }
 
-export default function NetWorthHistory({ data }: NetWorthHistoryProps) {
+export default function NetWorthHistory({ data, projectionData }: NetWorthHistoryProps) {
   if (data.length === 0) {
     return (
       <div className="bg-card border border-card-border rounded-xl p-6">
@@ -33,11 +35,30 @@ export default function NetWorthHistory({ data }: NetWorthHistoryProps) {
     );
   }
 
+  // Build combined chart data
   const chartData = data.map((d) => ({
     date: format(new Date(d.date), "MMM d"),
     fullDate: format(new Date(d.date), "MMM d, yyyy"),
-    netWorth: d.netWorth,
+    actual: d.netWorth,
+    projected: undefined as number | undefined,
   }));
+
+  if (projectionData && projectionData.length > 0) {
+    // Add bridge point: last actual value also appears as first projected
+    const lastActual = data[data.length - 1];
+    chartData[chartData.length - 1].projected = lastActual.netWorth;
+
+    for (const p of projectionData) {
+      chartData.push({
+        date: format(new Date(p.date), "MMM ''yy"),
+        fullDate: format(new Date(p.date), "MMM d, yyyy"),
+        actual: undefined as unknown as number,
+        projected: p.netWorth,
+      });
+    }
+  }
+
+  const hasProjection = projectionData && projectionData.length > 0;
 
   return (
     <div className="bg-card border border-card-border rounded-xl p-6">
@@ -61,7 +82,10 @@ export default function NetWorthHistory({ data }: NetWorthHistoryProps) {
             />
             <Tooltip
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(value: any) => [formatCurrency(Number(value)), "Net Worth"]}
+              formatter={(value: any, name?: string) => [
+                formatCurrency(Number(value)),
+                name === "actual" ? "Actual" : "Projected",
+              ]}
               labelFormatter={(label) => String(label)}
               contentStyle={{
                 backgroundColor: "var(--card)",
@@ -70,14 +94,34 @@ export default function NetWorthHistory({ data }: NetWorthHistoryProps) {
                 fontSize: "13px",
               }}
             />
+            {hasProjection && (
+              <Legend
+                formatter={(value: string) =>
+                  value === "actual" ? "Actual" : "Projected"
+                }
+              />
+            )}
             <Line
               type="monotone"
-              dataKey="netWorth"
+              dataKey="actual"
               stroke="var(--accent)"
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4 }}
+              connectNulls={false}
             />
+            {hasProjection && (
+              <Line
+                type="monotone"
+                dataKey="projected"
+                stroke="var(--accent)"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                activeDot={{ r: 4 }}
+                connectNulls={false}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>

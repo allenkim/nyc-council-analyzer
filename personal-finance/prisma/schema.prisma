@@ -83,6 +83,7 @@ model Transaction {
   updatedAt          DateTime @updatedAt
 
   @@index([accountId, date])
+  @@index([date])
   @@index([category])
   @@index([merchantName])
 }
@@ -144,6 +145,30 @@ model CostBasis {
   purchasePrice Float    // Price per unit at purchase
   quantity      Float    // Quantity purchased
   createdAt     DateTime @default(now())
+}
+
+// Financial Goals
+model FinancialGoal {
+  id            String    @id @default(cuid())
+  name          String
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  targetDate    DateTime?
+  category      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Auto-categorization rules for transactions
+model CategoryRule {
+  id              String   @id @default(cuid())
+  merchantPattern String
+  matchType       String   @default("contains") // "contains" | "startsWith" | "exact"
+  category        String
+  priority        Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([merchantPattern])
 }
 
 // AI-generated insights

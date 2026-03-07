@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import NetWorthCard from "@/components/NetWorthCard";
 import AllocationChart from "@/components/AllocationChart";
 import AccountCard from "@/components/AccountCard";
+import CashFlowForecast from "@/components/CashFlowForecast";
 import { ASSET_CATEGORIES } from "@/lib/categories";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,8 @@ export default async function DashboardPage() {
       />
 
       <AllocationChart data={allocationData} />
+
+      <CashFlowForecast />
 
       {accounts.length > 0 ? (
         <div>

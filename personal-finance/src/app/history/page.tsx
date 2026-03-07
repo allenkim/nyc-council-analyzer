@@ -17,6 +17,34 @@ export default async function HistoryPage() {
     netWorth: s.netWorth,
   }));
 
+  // Compute linear regression projection if 5+ snapshots
+  let projectionData: { date: string; netWorth: number }[] | undefined;
+  if (snapshots.length >= 5) {
+    const points = snapshots.map((s) => ({
+      x: s.createdAt.getTime(),
+      y: s.netWorth,
+    }));
+    const n = points.length;
+    const sumX = points.reduce((s, p) => s + p.x, 0);
+    const sumY = points.reduce((s, p) => s + p.y, 0);
+    const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
+    const sumX2 = points.reduce((s, p) => s + p.x * p.x, 0);
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    const lastDate = points[points.length - 1].x;
+    const msPerMonth = 30.44 * 24 * 60 * 60 * 1000;
+
+    projectionData = [3, 6, 12].map((months) => {
+      const futureDate = new Date(lastDate + months * msPerMonth);
+      return {
+        date: futureDate.toISOString(),
+        netWorth: Math.round(slope * futureDate.getTime() + intercept),
+      };
+    });
+  }
+
   const descending = [...snapshots].reverse();
 
   return (
@@ -31,7 +59,7 @@ export default async function HistoryPage() {
         <TakeSnapshotButton />
       </div>
 
-      <NetWorthHistory data={chartData} />
+      <NetWorthHistory data={chartData} projectionData={projectionData} />
 
       {descending.length > 0 && (
         <div className="bg-card border border-card-border rounded-xl p-6">

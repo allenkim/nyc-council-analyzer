@@ -75,6 +75,67 @@ export const updateHoldingSchema = z.object({
   ticker: z.string().optional().nullable(),
 });
 
+// --- Goals ---
+
+export const createGoalSchema = z.object({
+  name: z.string().min(1),
+  targetAmount: z.number().positive(),
+  currentAmount: z.number().min(0).default(0),
+  targetDate: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+});
+
+export const updateGoalSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).optional(),
+  targetAmount: z.number().positive().optional(),
+  currentAmount: z.number().min(0).optional(),
+  targetDate: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+});
+
+// --- Transactions ---
+
+export const transactionQuerySchema = z.object({
+  search: z.string().optional(),
+  category: z.string().optional(),
+  accountId: z.string().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  amountMin: z.coerce.number().optional(),
+  amountMax: z.coerce.number().optional(),
+  sortBy: z.enum(["date", "amount", "name", "category"]).default("date"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(200).default(50),
+});
+
+// --- Category Rules ---
+
+export const createCategoryRuleSchema = z.object({
+  merchantPattern: z.string().min(1),
+  matchType: z.enum(["contains", "startsWith", "exact"]).default("contains"),
+  category: z.string().min(1),
+  priority: z.number().int().default(0),
+});
+
+export const updateCategoryRuleSchema = z.object({
+  id: z.string().min(1),
+  merchantPattern: z.string().min(1).optional(),
+  matchType: z.enum(["contains", "startsWith", "exact"]).optional(),
+  category: z.string().min(1).optional(),
+  priority: z.number().int().optional(),
+});
+
+// --- Cost Basis ---
+
+export const createCostBasisSchema = z.object({
+  holdingId: z.string().min(1),
+  purchaseDate: z.string().min(1),
+  purchasePrice: z.number().positive(),
+  quantity: z.number().positive(),
+});
+
 // --- Plaid ---
 
 export const exchangeTokenSchema = z.object({

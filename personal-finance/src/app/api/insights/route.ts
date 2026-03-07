@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { startOfMonth, subMonths, format } from "date-fns";
 import { updateInsightSchema } from "@/lib/validation";
+import { getAnthropicClient } from "@/lib/anthropic";
 
 // GET all insights
 export async function GET() {
@@ -28,6 +29,7 @@ export async function POST() {
     const thisMonthStart = startOfMonth(now);
     const lastMonthStart = startOfMonth(subMonths(now, 1));
     const twoMonthsAgoStart = startOfMonth(subMonths(now, 2));
+    const threeMonthsAgoStart = startOfMonth(subMonths(now, 3));
 
     // Get this month's spending by category
     const thisMonthSpending = await prisma.transaction.groupBy({
@@ -167,10 +169,72 @@ export async function POST() {
       });
     }
 
+    // AI-powered insight (rate limit: 1 per 24 hours)
+    if (process.env.ANTHROPIC_API_KEY && totalThisMonth > 0) {
+      const recentAiInsight = await prisma.insight.findFirst({
+        where: {
+          type: "AI_SUMMARY",
+          createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        },
+      });
+
+      if (!recentAiInsight) {
+        try {
+          // Gather 3 months of categorized spending
+          const threeMonthSpending = await prisma.transaction.groupBy({
+            by: ["category"],
+            where: {
+              date: { gte: threeMonthsAgoStart },
+              amount: { gt: 0 },
+              pending: false,
+            },
+            _sum: { amount: true },
+          });
+
+          const spendingData = {
+            thisMonth: Object.fromEntries(thisMonthMap),
+            lastMonth: Object.fromEntries(lastMonthMap),
+            twoMonthsAgo: Object.fromEntries(twoMonthsMap),
+            threeMonthTotal: Object.fromEntries(
+              threeMonthSpending.map((s) => [s.category, s._sum.amount || 0])
+            ),
+          };
+
+          const anthropic = getAnthropicClient();
+          const response = await anthropic.messages.create({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 300,
+            messages: [{
+              role: "user",
+              content: `You are a personal finance advisor. Analyze this spending data and provide 2-3 concise, actionable insights. Be specific about dollar amounts and categories. Focus on patterns, savings opportunities, and concerns.
+
+Spending data (by category, in USD):
+${JSON.stringify(spendingData, null, 2)}
+
+Reply with only your insights as a short paragraph, no bullet points or headings.`,
+            }],
+          });
+
+          const aiText = response.content[0].type === "text" ? response.content[0].text : "";
+          if (aiText) {
+            newInsights.push({
+              type: "AI_SUMMARY",
+              title: "AI Spending Analysis",
+              message: aiText,
+              severity: "INFO",
+              data: JSON.stringify(spendingData),
+            });
+          }
+        } catch (aiError) {
+          console.error("Error generating AI insight:", aiError);
+        }
+      }
+    }
+
     // Save new insights (avoid duplicates by checking recent ones)
     const recentInsights = await prisma.insight.findMany({
       where: {
-        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // Last 24 hours
+        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
       },
     });
 

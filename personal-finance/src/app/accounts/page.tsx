@@ -8,12 +8,18 @@ import AddAccountForm from "./AddAccountForm";
 import AddHoldingForm from "./AddHoldingForm";
 import DeleteButton from "./DeleteButton";
 import CollapsibleHoldings from "./CollapsibleHoldings";
+import { computeGainLoss } from "@/lib/holdings";
+import AddCostBasisForm from "./AddCostBasisForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function AccountsPage() {
   const accounts = await prisma.account.findMany({
-    include: { holdings: true, plaidItem: true, snapTradeConnection: true },
+    include: {
+      holdings: { include: { costBasis: true } },
+      plaidItem: true,
+      snapTradeConnection: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -156,9 +162,16 @@ export default async function AccountsPage() {
                     )}
                   </div>
                   <HoldingsTable
-                    holdings={account.holdings}
+                    holdings={account.holdings.map(computeGainLoss)}
                     totalValue={totalValue}
                   />
+                  {account.holdings.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {account.holdings.map((h) => (
+                        <AddCostBasisForm key={h.id} holdingId={h.id} holdingName={h.name} />
+                      ))}
+                    </div>
+                  )}
                   {!isAutoSynced && (
                     <div className="mt-4">
                       <AddHoldingForm accountId={account.id} />

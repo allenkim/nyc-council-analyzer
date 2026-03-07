@@ -27,6 +27,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No Plaid connections found" }, { status: 404 });
     }
 
+    // Load category rules once for the entire sync batch
+    const categoryRules = await prisma.categoryRule.findMany({
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+    });
+
     const results = [];
 
     for (const item of plaidItems) {
@@ -61,7 +66,7 @@ export async function POST(request: NextRequest) {
             const account = accountMap.get(txn.account_id);
             if (!account) continue;
 
-            await upsertTransaction(account.id, txn);
+            await upsertTransaction(account.id, txn, categoryRules);
             addedCount++;
           }
 
@@ -70,7 +75,7 @@ export async function POST(request: NextRequest) {
             const account = accountMap.get(txn.account_id);
             if (!account) continue;
 
-            await upsertTransaction(account.id, txn);
+            await upsertTransaction(account.id, txn, categoryRules);
             modifiedCount++;
           }
 
@@ -125,10 +130,50 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function upsertTransaction(accountId: string, txn: Transaction) {
-  const category = txn.personal_finance_category?.primary ||
+interface CachedCategoryRule {
+  merchantPattern: string;
+  matchType: string;
+  category: string;
+}
+
+function matchCategoryRule(
+  rules: CachedCategoryRule[],
+  merchantName: string | null,
+  name: string
+): string | null {
+  const target = (merchantName || name).toLowerCase();
+  for (const rule of rules) {
+    const pattern = rule.merchantPattern.toLowerCase();
+    let matched = false;
+    if (rule.matchType === "exact") {
+      matched = target === pattern;
+    } else if (rule.matchType === "startsWith") {
+      matched = target.startsWith(pattern);
+    } else {
+      matched = target.includes(pattern);
+    }
+    if (matched) return rule.category;
+  }
+  return null;
+}
+
+async function upsertTransaction(
+  accountId: string,
+  txn: Transaction,
+  categoryRules: CachedCategoryRule[]
+) {
+  const plaidCategory = txn.personal_finance_category?.primary ||
     txn.category?.[0] ||
     "OTHER";
+
+  // Check category rules first (sorted by priority DESC)
+  const ruleCategory = matchCategoryRule(
+    categoryRules,
+    txn.merchant_name || null,
+    txn.name
+  );
+
+  const category = ruleCategory || plaidCategory;
 
   const subcategory = txn.personal_finance_category?.detailed ||
     txn.category?.[1] ||
@@ -138,7 +183,7 @@ async function upsertTransaction(accountId: string, txn: Transaction) {
     accountId,
     name: txn.name,
     merchantName: txn.merchant_name || null,
-    amount: txn.amount, // Positive = money out (spending), negative = money in
+    amount: txn.amount,
     category,
     subcategory,
     date: new Date(txn.date),
@@ -163,8 +208,19 @@ async function removeTransaction(removed: RemovedTransaction) {
   }
 }
 
+function normalizeMerchantName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[*#]+/g, "") // strip * and #
+    .replace(/\b(inc|llc|corp|ltd|co)\b\.?/gi, "") // strip corporate suffixes
+    .replace(/\d+$/g, "") // strip trailing numbers
+    .replace(/\s+/g, " ") // collapse whitespace
+    .trim();
+}
+
+const KNOWN_BILLING_PERIODS = [7, 14, 30, 60, 90];
+
 async function detectRecurringTransactions(plaidItemId: string) {
-  // Get all accounts for this item
   const accounts = await prisma.account.findMany({
     where: { plaidItemId },
     select: { id: true },
@@ -172,78 +228,80 @@ async function detectRecurringTransactions(plaidItemId: string) {
 
   const accountIds = accounts.map((a) => a.id);
 
-  // Get transactions from the last 90 days
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  // 180-day window for better quarterly detection
+  const windowStart = new Date();
+  windowStart.setDate(windowStart.getDate() - 180);
 
   const transactions = await prisma.transaction.findMany({
     where: {
       accountId: { in: accountIds },
-      date: { gte: ninetyDaysAgo },
-      amount: { gt: 0 }, // Only look at spending
+      date: { gte: windowStart },
+      amount: { gt: 0 },
     },
     orderBy: { date: "asc" },
   });
 
-  // Group by merchant name and look for patterns
+  // Group by normalized merchant name
   const merchantGroups = new Map<string, typeof transactions>();
 
   for (const txn of transactions) {
-    const key = txn.merchantName?.toLowerCase() || txn.name.toLowerCase();
+    const key = normalizeMerchantName(txn.merchantName || txn.name);
     const group = merchantGroups.get(key) || [];
     group.push(txn);
     merchantGroups.set(key, group);
   }
 
-  // Detect recurring: 3+ transactions with similar amounts and regular intervals
   const recurringIds: string[] = [];
 
   for (const [, group] of merchantGroups) {
-    if (group.length < 3) continue;
+    if (group.length < 2) continue;
 
-    // Check if amounts are similar (within 10%)
+    // Check if amounts are similar (within 20%)
     const amounts = group.map((t) => t.amount);
     const avgAmount = amounts.reduce((a, b) => a + b, 0) / amounts.length;
     const amountsSimilar = amounts.every(
-      (a) => Math.abs(a - avgAmount) / avgAmount < 0.1
+      (a) => Math.abs(a - avgAmount) / avgAmount < 0.2
     );
 
     if (!amountsSimilar) continue;
 
-    // Check for regular intervals (weekly, monthly, etc.)
+    // Check for regular intervals
     const dates = group.map((t) => t.date.getTime()).sort((a, b) => a - b);
     const intervals: number[] = [];
     for (let i = 1; i < dates.length; i++) {
-      intervals.push((dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24)); // Days
+      intervals.push((dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24));
     }
 
     const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
 
-    // Check if intervals are consistent (within 5 days of average)
+    // Check if intervals are consistent (within 10 days of average)
     const intervalsConsistent = intervals.every(
-      (i) => Math.abs(i - avgInterval) < 5
+      (i) => Math.abs(i - avgInterval) < 10
     );
 
-    // If intervals are consistent and between 7 and 35 days, mark as recurring
-    if (intervalsConsistent && avgInterval >= 7 && avgInterval <= 35) {
+    let isRecurring = false;
+
+    if (group.length === 2) {
+      // 2-transaction guard: single interval must be near a known billing period
+      const interval = intervals[0];
+      isRecurring = KNOWN_BILLING_PERIODS.some(
+        (period) => Math.abs(interval - period) <= 5
+      );
+    } else {
+      // 3+ transactions: standard consistency check, 7-95 day range (weekly to quarterly)
+      isRecurring = intervalsConsistent && avgInterval >= 7 && avgInterval <= 95;
+    }
+
+    if (isRecurring) {
       recurringIds.push(...group.map((t) => t.id));
     }
   }
 
-  // Update recurring flag
+  // Only set isRecurring: true, never reset to false (preserves manual flags)
   if (recurringIds.length > 0) {
     await prisma.transaction.updateMany({
       where: { id: { in: recurringIds } },
       data: { isRecurring: true },
     });
   }
-
-  // Reset non-recurring
-  await prisma.transaction.updateMany({
-    where: {
-      accountId: { in: accountIds },
-      id: { notIn: recurringIds },
-    },
-    data: { isRecurring: false },
-  });
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createHoldingSchema, updateHoldingSchema } from "@/lib/validation";
+import { computeGainLoss } from "@/lib/holdings";
 
 export async function GET() {
   const holdings = await prisma.holding.findMany({
@@ -11,33 +12,7 @@ export async function GET() {
     orderBy: { value: "desc" },
   });
 
-  // Calculate gains/losses for each holding
-  const holdingsWithPerformance = holdings.map((holding) => {
-    const totalCostBasis = holding.costBasis.reduce(
-      (sum, cb) => sum + cb.purchasePrice * cb.quantity,
-      0
-    );
-    const totalCostQuantity = holding.costBasis.reduce(
-      (sum, cb) => sum + cb.quantity,
-      0
-    );
-    const avgCostPerUnit = totalCostQuantity > 0
-      ? totalCostBasis / totalCostQuantity
-      : 0;
-
-    const gainLoss = holding.value - totalCostBasis;
-    const gainLossPercent = totalCostBasis > 0
-      ? ((holding.value - totalCostBasis) / totalCostBasis) * 100
-      : 0;
-
-    return {
-      ...holding,
-      totalCostBasis,
-      avgCostPerUnit,
-      gainLoss,
-      gainLossPercent,
-    };
-  });
+  const holdingsWithPerformance = holdings.map(computeGainLoss);
 
   return NextResponse.json(holdingsWithPerformance);
 }

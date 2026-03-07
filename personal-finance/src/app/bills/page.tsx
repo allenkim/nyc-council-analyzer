@@ -3,6 +3,7 @@ import { formatCurrency } from "@/lib/categories";
 import AddBillForm from "./AddBillForm";
 import BillCard from "./BillCard";
 import ResetBillsButton from "./ResetBillsButton";
+import BillSuggestions from "./BillSuggestion";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,9 @@ export default async function BillsPage() {
           </p>
         </div>
       </div>
+
+      {/* Suggested bills from recurring transactions */}
+      <BillSuggestions />
 
       {/* Add bill form */}
       <div className="bg-card border border-card-border rounded-xl p-6">
