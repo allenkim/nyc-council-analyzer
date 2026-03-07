@@ -19,9 +19,10 @@ export const authConfig: NextAuthConfig = {
     signIn: "/finance/login",
   },
   callbacks: {
-    authorized({ auth }) {
-      if (!auth?.user?.email) return false;
-      return ALLOWED_EMAILS.includes(auth.user.email);
+    // Authorization is handled in middleware.ts — not here.
+    // Returning true prevents NextAuth from auto-redirecting to login.
+    authorized() {
+      return true;
     },
   },
 };
