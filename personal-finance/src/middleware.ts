@@ -5,7 +5,7 @@ import { ALLOWED_EMAILS } from "@/lib/allowlist";
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
+  const pathname = new URL(req.url).pathname;
 
   // Allow auth API routes and login page without session
   if (
