@@ -22,8 +22,6 @@ interface FeedCardProps {
   isActioning?: boolean;
 }
 
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-
 export default function FeedCard({ item, onAction, isActioning }: FeedCardProps) {
   const [rationaleExpanded, setRationaleExpanded] = useState(false);
 

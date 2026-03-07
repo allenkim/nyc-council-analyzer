@@ -25,7 +25,6 @@ export default function FeedView({
   const [heartedItems, setHeartedItems] = useState<FeedItemData[]>(initialHearted);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isActioning, setIsActioning] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const hasNoItems = unseenItems.length === 0 && savedItems.length === 0 && heartedItems.length === 0;
@@ -49,7 +48,6 @@ export default function FeedView({
       setUnseenItems(feed.unseen || []);
       setSavedItems(feed.saved || []);
       setHeartedItems(feed.hearted || []);
-      setCurrentIndex(0);
       setActiveTab("new");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
