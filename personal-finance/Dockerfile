@@ -29,7 +29,7 @@ RUN useradd --create-home --shell /bin/false appuser \
     && chown -R appuser:appuser /app
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD node -e "const http=require('http');http.get('http://localhost:3000/finance',(r)=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))"
+    CMD node -e "const http=require('http');http.get('http://localhost:3000/finance/login',(r)=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))"
 
 USER appuser
 
