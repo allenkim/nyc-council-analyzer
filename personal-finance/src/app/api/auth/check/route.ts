@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { ALLOWED_EMAILS } from "@/lib/allowlist";
 
 export async function GET(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET, secureCookie: true });
   const email = token?.email as string | undefined;
 
   if (!email || !ALLOWED_EMAILS.includes(email)) {
