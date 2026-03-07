@@ -94,45 +94,17 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // Sync cash balances from investment accounts
-          for (const plaidAccount of accounts) {
-            const account = accountMap.get(plaidAccount.account_id);
-            if (!account) continue;
-
-            const cashBalance = plaidAccount.balances.available || plaidAccount.balances.current;
-            if (cashBalance && cashBalance > 0) {
-              const existingCash = await prisma.holding.findFirst({
-                where: {
-                  accountId: account.id,
-                  category: "CASH",
-                  plaidSecurityId: null,
-                },
-              });
-
-              const cashData = {
-                name: "Cash",
-                ticker: null,
+          // Clean up any stale duplicate Cash holdings (plaidSecurityId: null)
+          // that were created by a previous bug. Investment cash is already
+          // included in the holdings array as a cash-type security.
+          for (const [, account] of accountMap) {
+            await prisma.holding.deleteMany({
+              where: {
+                accountId: account.id,
                 category: "CASH",
-                quantity: 1,
-                price: cashBalance,
-                value: cashBalance,
                 plaidSecurityId: null,
-              };
-
-              if (existingCash) {
-                await prisma.holding.update({
-                  where: { id: existingCash.id },
-                  data: cashData,
-                });
-              } else {
-                await prisma.holding.create({
-                  data: {
-                    accountId: account.id,
-                    ...cashData,
-                  },
-                });
-              }
-            }
+              },
+            });
           }
 
           holdingsCount = holdings.length;

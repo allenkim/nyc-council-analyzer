@@ -120,50 +120,17 @@ export async function POST(request: NextRequest) {
               }
             }
 
-            // Process cash balances
-            if (balances) {
-              for (const balance of balances) {
-                const cashAmount = balance.cash ?? 0;
-                if (cashAmount <= 0) continue;
-
-                const currencyCode =
-                  balance.currency?.code || "USD";
-                const cashName = `Cash (${currencyCode})`;
-
-                const existingCash = await prisma.holding.findFirst({
-                  where: {
-                    accountId: account.id,
-                    category: "CASH",
-                    snapTradeSymbolId: null,
-                    plaidSecurityId: null,
-                  },
-                });
-
-                const cashData = {
-                  name: cashName,
-                  ticker: null,
-                  category: "CASH",
-                  quantity: 1,
-                  price: cashAmount,
-                  value: cashAmount,
-                  snapTradeSymbolId: null,
-                };
-
-                if (existingCash) {
-                  await prisma.holding.update({
-                    where: { id: existingCash.id },
-                    data: cashData,
-                  });
-                } else {
-                  await prisma.holding.create({
-                    data: {
-                      accountId: account.id,
-                      ...cashData,
-                    },
-                  });
-                }
-              }
-            }
+            // Clean up any stale duplicate Cash holdings (snapTradeSymbolId: null)
+            // that were created by a previous bug. Cash-equivalent positions
+            // (like money market funds) are already included in the positions array.
+            await prisma.holding.deleteMany({
+              where: {
+                accountId: account.id,
+                category: "CASH",
+                snapTradeSymbolId: null,
+                plaidSecurityId: null,
+              },
+            });
           } catch (accountError) {
             console.error(
               `Error syncing SnapTrade account ${snapTradeAccountId}:`,
