@@ -22,7 +22,13 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl;
       // Allow auth routes and login page through without a session
-      if (pathname.startsWith("/api/auth") || pathname === "/login") {
+      // Middleware sees full path (with basePath) or stripped — check both
+      if (
+        pathname.startsWith("/api/auth") ||
+        pathname.startsWith("/finance/api/auth") ||
+        pathname === "/login" ||
+        pathname === "/finance/login"
+      ) {
         return true;
       }
       if (!auth?.user?.email) return false;
