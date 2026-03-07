@@ -19,18 +19,7 @@ export const authConfig: NextAuthConfig = {
     signIn: "/finance/login",
   },
   callbacks: {
-    authorized({ auth, request }) {
-      const { pathname } = request.nextUrl;
-      // Allow auth routes and login page through without a session
-      // Middleware sees full path (with basePath) or stripped — check both
-      if (
-        pathname.startsWith("/api/auth") ||
-        pathname.startsWith("/finance/api/auth") ||
-        pathname === "/login" ||
-        pathname === "/finance/login"
-      ) {
-        return true;
-      }
+    authorized({ auth }) {
       if (!auth?.user?.email) return false;
       return ALLOWED_EMAILS.includes(auth.user.email);
     },
