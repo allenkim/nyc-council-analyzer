@@ -44,6 +44,27 @@ services:
       start_period: 60s
       retries: 3
 
+  style:
+    build: ./style-recommender
+    expose:
+      - "3001"
+    volumes:
+      - style-data:/app/data
+    environment:
+      - HOSTNAME=0.0.0.0
+      - PORT=3001
+      - DATABASE_URL=file:/app/data/style.db
+    env_file:
+      - path: style-recommender/.env
+        required: false
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http=require('http');http.get('http://localhost:3001/style',(r)=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
   caddy:
     image: caddy:2-alpine
     ports:
@@ -59,6 +80,8 @@ services:
         condition: service_started
       finance:
         condition: service_healthy
+      style:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
@@ -66,6 +89,8 @@ volumes:
     name: district2-dashboard_app-data
   finance-data:
     name: whatisms_finance-data
+  style-data:
+    name: whatisms_style-data
   caddy-data:
     name: whatisms_caddy-data
   caddy-config:
