@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Personal finance tracker built with Next.js 16 (App Router), Prisma with LibSQL/SQLite, and Plaid for bank account syncing. Single-user, local-only app with no authentication.
+Personal finance tracker built with Next.js 16 (App Router), Prisma with LibSQL/SQLite, Plaid for bank account syncing, and SnapTrade for brokerage connections. Authenticated via NextAuth v5 with Google OAuth and email allowlist.
 
 ## Commands
 
@@ -24,17 +24,26 @@ Prisma client is generated to `src/generated/prisma/` (not `node_modules`). Afte
 
 ## Architecture
 
-**Stack:** Next.js 16 + React 19 + TypeScript + Tailwind v4 + Prisma 7 + LibSQL (SQLite) + Plaid API + Recharts
+**Stack:** Next.js 16 + React 19 + TypeScript + Tailwind v4 + Prisma 7 + LibSQL (SQLite) + NextAuth v5 + Plaid API + SnapTrade + Recharts + Anthropic SDK
 
 **Data flow:** UI (Server/Client Components) → API Routes (`src/app/api/`) → Prisma ORM → SQLite (`prisma/dev.db`)
+
+### Auth
+
+- NextAuth v5 (beta) with Google OAuth provider
+- Email allowlist in `src/lib/allowlist.ts` — only listed emails can sign in
+- Edge-compatible config split: `src/lib/auth.config.ts` (middleware/edge) vs `src/lib/auth.ts` (server, with Prisma)
+- `basePath: "/finance/api/auth"` — all auth routes are prefixed for the reverse proxy
+- Middleware (`src/middleware.ts`) protects all routes except `/api/auth/*` and `/login`
+- JWT sessions (no database sessions)
 
 ### Key directories
 
 - `src/app/` — Next.js App Router pages and API routes
 - `src/app/api/` — REST API endpoints (plaid/, accounts/, holdings/, transactions/, snapshots/, budgets/, bills/, credit-score/, insights/)
 - `src/components/` — Shared React components
-- `src/lib/` — Utilities: `db.ts` (Prisma singleton), `plaid.ts` (Plaid client), `categories.ts` (category definitions)
-- `prisma/schema.prisma` — Database schema (11 models)
+- `src/lib/` — Utilities: `db.ts` (Prisma singleton), `plaid.ts` (Plaid client), `categories.ts` (category definitions), `auth.ts`/`auth.config.ts` (NextAuth), `allowlist.ts` (authorized emails)
+- `prisma/schema.prisma` — Database schema (15 models)
 
 ### Patterns
 
@@ -43,10 +52,12 @@ Prisma client is generated to `src/generated/prisma/` (not `node_modules`). Afte
 - Pages that need fresh data use `export const dynamic = "force-dynamic"`
 - DB singleton in `src/lib/db.ts` — import as `import { prisma } from "@/lib/db"`
 - Plaid integration: create link token → user connects via Plaid Link → exchange for access token → sync holdings/transactions
+- SnapTrade integration: for brokerages not supported by Plaid (e.g. Fidelity). Create login link → user connects → sync holdings
+- All data is scoped to authenticated user via `userId` foreign keys
 
 ### Database
 
-SQLite via LibSQL adapter. DB file at `prisma/dev.db`. Key models: PlaidItem, Account, Holding, Transaction, Snapshot, BudgetGoal, Bill, CreditScore, CostBasis, Insight.
+SQLite via LibSQL adapter. DB file at `prisma/dev.db`. Key models: User, PlaidItem, SnapTradeConnection, Account, Holding, Transaction, Snapshot, BudgetGoal, Bill, CreditScore, CostBasis, FinancialGoal, CategoryRule, Insight.
 
 Transaction amounts: positive = money out, negative = money in (Plaid convention).
 
@@ -59,4 +70,8 @@ Transaction amounts: positive = money out, negative = money in (Plaid convention
 
 ## Environment
 
-Copy `env.example` to `.env` and fill in Plaid credentials from https://dashboard.plaid.com/developers/keys. Use `PLAID_ENV=sandbox` for testing with fake data.
+Copy `env.example` to `.env` and fill in credentials:
+- **Plaid**: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV` (sandbox/development/production)
+- **SnapTrade**: `SNAPTRADE_CLIENT_ID`, `SNAPTRADE_CONSUMER_KEY`
+- **NextAuth**: `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- **Next.js basePath**: Configured to `/finance` in `next.config.ts` — all routes and API endpoints are prefixed with `/finance`

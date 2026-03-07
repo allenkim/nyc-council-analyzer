@@ -1,24 +1,19 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Overview
+
 This is the `whatisms` monorepo — all projects hosted on whatisms.com.
-
-## Repo Structure
-
-```
-whatisms/
-├── district2-dashboard/   # NYC Council District 2 intelligence dashboard
-├── personal-finance/      # Personal finance tracker (Next.js + Prisma)
-├── docker-compose.yml     # Multi-service orchestration
-├── Caddyfile              # Reverse proxy config (routes by path)
-└── CLAUDE.md              # This file
-```
 
 ## Projects
 
 | Project | Stack | Path on Site | CLAUDE.md |
 |---------|-------|-------------|-----------|
 | District 2 Dashboard | Python FastAPI + vanilla JS | `/district2` | `district2-dashboard/CLAUDE.md` |
-| Personal Finance | Next.js + Prisma + SQLite | `/finance` | `personal-finance/CLAUDE.md` |
+| Personal Finance | Next.js 16 + Prisma 7 + SQLite | `/finance` | `personal-finance/CLAUDE.md` |
+
+Each project has its own CLAUDE.md with detailed architecture, commands, and patterns. Read the relevant one before working on a project.
 
 ## Deployment
 
@@ -31,7 +26,19 @@ docker compose build && docker compose up -d
 - Caddy reverse proxy routes `/finance*` → `finance:3000`, everything else → `district2:8050`
 - Each project has its own `Dockerfile` in its directory
 - Persistent volumes use `name:` keys to preserve existing Docker data
+- Caddy auto-provisions TLS via Let's Encrypt
+- Security headers (CSP, HSTS, X-Frame-Options) are set in the Caddyfile
 
-## Auth
+## Auth Architecture
 
-The district2-dashboard backend handles auth for the portal (session-based, httponly cookies). The portal at `/` shows tiles for all projects the user has access to. Admins see all projects automatically.
+Two independent auth systems:
+
+1. **Portal auth** (district2-dashboard backend): Session-based with httponly cookies. The portal at `/` shows tiles for all projects the user has access to. Admins see all projects automatically. Default admin: `allen`/`allen1729` (seeded on first run).
+
+2. **Finance auth** (NextAuth v5): Google OAuth with email allowlist (`src/lib/allowlist.ts`). JWT sessions. Auth API lives at `/finance/api/auth/*`, login page at `/finance/login`. Middleware protects all routes except auth endpoints and login.
+
+## Key Infrastructure Details
+
+- `docker-compose.yml` — 3 services: `district2` (port 8050), `finance` (port 3000), `caddy` (ports 80/443)
+- `Caddyfile` — Reverse proxy config + security headers + static asset caching
+- CSP allows: Plaid, SnapTrade, Leaflet tile servers, Cloudflare Insights, unpkg/jsdelivr CDNs
