@@ -3,8 +3,12 @@ import { plaidClient, mapPlaidAccountType } from "@/lib/plaid";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
 import { exchangeTokenSchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const parsed = exchangeTokenSchema.safeParse(body);
@@ -35,6 +39,7 @@ export async function POST(request: NextRequest) {
         itemId: item_id,
         accessToken: encrypt(access_token),
         institution: institutionName || "Unknown Institution",
+        userId: user.id,
       },
     });
 
@@ -49,6 +54,7 @@ export async function POST(request: NextRequest) {
           type: accountType,
           plaidItemId: plaidItem.id,
           plaidAccountId: plaidAccount.account_id,
+          userId: user.id,
         },
       });
 

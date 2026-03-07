@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { transactionQuerySchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const params = Object.fromEntries(request.nextUrl.searchParams);
     const parsed = transactionQuerySchema.safeParse(params);
     if (!parsed.success) {
@@ -20,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: any = { account: { userId: user.id } };
 
     if (search) {
       where.OR = [

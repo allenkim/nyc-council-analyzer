@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { formatCurrencyExact } from "@/lib/categories";
 import { SPENDING_CATEGORY_LABELS } from "@/lib/categories";
+import PrivacyValue from "@/components/PrivacyValue";
 import { apiUrl } from "@/lib/api";
 import { format } from "date-fns";
 
@@ -224,7 +225,7 @@ export default function TransactionTable({ accounts, categories }: Props) {
                     <td className={`px-4 py-3 text-right font-medium tabular-nums ${
                       txn.amount < 0 ? "text-success" : ""
                     }`}>
-                      {txn.amount < 0 ? "+" : ""}{formatCurrencyExact(Math.abs(txn.amount))}
+                      <PrivacyValue>{txn.amount < 0 ? "+" : ""}{formatCurrencyExact(Math.abs(txn.amount))}</PrivacyValue>
                     </td>
                   </tr>
                 ))

@@ -7,8 +7,30 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plaidItems           PlaidItem[]
+  snapTradeConnections SnapTradeConnection[]
+  accounts             Account[]
+  budgetGoals          BudgetGoal[]
+  bills                Bill[]
+  creditScores         CreditScore[]
+  financialGoals       FinancialGoal[]
+  categoryRules        CategoryRule[]
+  insights             Insight[]
+  snapshots            Snapshot[]
+}
+
 model PlaidItem {
   id                 String    @id @default(cuid())
+  userId             String?
+  user               User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   itemId             String    @unique // Plaid's item_id
   accessToken        String    // Plaid access token (keep secure!)
   institution        String    // Institution name for display
@@ -18,11 +40,15 @@ model PlaidItem {
   lastTransactionSync DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+
+  @@index([userId])
 }
 
 model SnapTradeConnection {
   id              String    @id @default(cuid())
-  userId          String    // SnapTrade userId (same for all connections in single-user app)
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapTradeUserId String    // SnapTrade userId
   userSecret      String    // SnapTrade userSecret (keep secure)
   authorizationId String    @unique
   institution     String
@@ -30,10 +56,14 @@ model SnapTradeConnection {
   lastSynced      DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
 }
 
 model Account {
   id                     String               @id @default(cuid())
+  userId                 String?
+  user                   User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
   name                   String
   institution            String
   type                   String               // BANK, BROKERAGE, CRYPTO_EXCHANGE, REAL_ESTATE, OTHER
@@ -47,6 +77,8 @@ model Account {
   transactions           Transaction[]
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @updatedAt
+
+  @@index([userId])
 }
 
 model Holding {
@@ -90,9 +122,13 @@ model Transaction {
 
 model Snapshot {
   id        String            @id @default(cuid())
+  userId    String?
+  user      User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
   netWorth  Float
   holdings  SnapshotHolding[]
   createdAt DateTime          @default(now())
+
+  @@index([userId])
 }
 
 model SnapshotHolding {
@@ -107,15 +143,22 @@ model SnapshotHolding {
 // Budget Goals - monthly spending limits per category
 model BudgetGoal {
   id        String   @id @default(cuid())
-  category  String   @unique // Spending category (matches Transaction.category)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String   // Spending category (matches Transaction.category)
   limit     Float    // Monthly spending limit
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([userId, category])
+  @@index([userId])
 }
 
 // Bill Reminders - track recurring bills
 model Bill {
   id        String    @id @default(cuid())
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String    // Bill name (e.g., "Netflix", "Electric Bill")
   amount    Float     // Expected amount
   dueDay    Int       // Day of month (1-31)
@@ -126,14 +169,20 @@ model Bill {
   notes     String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([userId])
 }
 
 // Credit Score History
 model CreditScore {
   id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   score     Int      // Credit score (300-850)
   source    String   // Where the score came from (manual, experian, etc.)
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // Investment cost basis for performance tracking
@@ -150,6 +199,8 @@ model CostBasis {
 // Financial Goals
 model FinancialGoal {
   id            String    @id @default(cuid())
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name          String
   targetAmount  Float
   currentAmount Float     @default(0)
@@ -157,11 +208,15 @@ model FinancialGoal {
   category      String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
 }
 
 // Auto-categorization rules for transactions
 model CategoryRule {
   id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   merchantPattern String
   matchType       String   @default("contains") // "contains" | "startsWith" | "exact"
   category        String
@@ -169,11 +224,14 @@ model CategoryRule {
   createdAt       DateTime @default(now())
 
   @@index([merchantPattern])
+  @@index([userId])
 }
 
 // AI-generated insights
 model Insight {
   id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String   // SPENDING_ANOMALY, WEEKLY_SUMMARY, BUDGET_ALERT, RECURRING_DETECTED
   title     String
   message   String
@@ -181,4 +239,6 @@ model Insight {
   isRead    Boolean  @default(false)
   data      String?  // JSON data for additional context
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }

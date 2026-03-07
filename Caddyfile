@@ -7,23 +7,6 @@ whatisms.com {
 	}
 
 	handle /finance* {
-		# Auth gate: validate session cookie against district2 before
-		# any request reaches the finance app. This is the PRIMARY auth
-		# layer — Next.js middleware is a secondary backup.
-		forward_auth district2:8050 {
-			uri /auth/me
-			header_up Cookie {header.Cookie}
-
-			@unauthorized status 401 403
-			handle_response @unauthorized {
-				redir * /login 302
-			}
-
-			@error status 5xx
-			handle_response @error {
-				respond "Service unavailable" 503
-			}
-		}
 		reverse_proxy finance:3000
 	}
 

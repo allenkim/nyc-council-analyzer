@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { snaptradeClient, SNAPTRADE_USER_ID } from "@/lib/snaptrade";
+import { getUser } from "@/lib/session";
 
 export async function POST() {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     // Check if we already have a SnapTrade user registered (reuse credentials)
     const existingConnection = await prisma.snapTradeConnection.findFirst({
-      select: { userId: true, userSecret: true },
+      where: { userId: user.id },
+      select: { snapTradeUserId: true, userSecret: true },
     });
 
-    let userId = existingConnection?.userId;
+    let snapTradeUserId = existingConnection?.snapTradeUserId;
     let userSecret = existingConnection?.userSecret;
 
-    if (!userId || !userSecret) {
+    if (!snapTradeUserId || !userSecret) {
       // Register a new SnapTrade user (or re-register if already exists)
       try {
         const registerResponse =
@@ -20,7 +25,7 @@ export async function POST() {
             userId: SNAPTRADE_USER_ID,
           });
 
-        userId = registerResponse.data.userId ?? SNAPTRADE_USER_ID;
+        snapTradeUserId = registerResponse.data.userId ?? SNAPTRADE_USER_ID;
         userSecret = registerResponse.data.userSecret!;
       } catch (regError: unknown) {
         // If user already exists (400), delete and re-register
@@ -34,7 +39,7 @@ export async function POST() {
             await snaptradeClient.authentication.registerSnapTradeUser({
               userId: SNAPTRADE_USER_ID,
             });
-          userId = registerResponse.data.userId ?? SNAPTRADE_USER_ID;
+          snapTradeUserId = registerResponse.data.userId ?? SNAPTRADE_USER_ID;
           userSecret = registerResponse.data.userSecret!;
         } else {
           throw regError;
@@ -45,7 +50,7 @@ export async function POST() {
     // Generate a login link for the connection portal
     const loginResponse =
       await snaptradeClient.authentication.loginSnapTradeUser({
-        userId,
+        userId: snapTradeUserId,
         userSecret,
         connectionType: "read",
       });
@@ -62,7 +67,7 @@ export async function POST() {
 
     return NextResponse.json({
       loginLink: redirectURI,
-      userId,
+      userId: snapTradeUserId,
       userSecret,
     });
   } catch (error: unknown) {

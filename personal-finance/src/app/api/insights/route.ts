@@ -3,11 +3,16 @@ import { prisma } from "@/lib/db";
 import { startOfMonth, subMonths, format } from "date-fns";
 import { updateInsightSchema } from "@/lib/validation";
 import { getAnthropicClient } from "@/lib/anthropic";
+import { getUser } from "@/lib/session";
 
 // GET all insights
 export async function GET() {
   try {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const insights = await prisma.insight.findMany({
+      where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       take: 20,
     });
@@ -25,6 +30,9 @@ export async function GET() {
 // POST generate new insights (analyze spending patterns)
 export async function POST() {
   try {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const now = new Date();
     const thisMonthStart = startOfMonth(now);
     const lastMonthStart = startOfMonth(subMonths(now, 1));
@@ -35,6 +43,7 @@ export async function POST() {
     const thisMonthSpending = await prisma.transaction.groupBy({
       by: ["category"],
       where: {
+        account: { userId: user.id },
         date: { gte: thisMonthStart },
         amount: { gt: 0 },
         pending: false,
@@ -46,6 +55,7 @@ export async function POST() {
     const lastMonthSpending = await prisma.transaction.groupBy({
       by: ["category"],
       where: {
+        account: { userId: user.id },
         date: { gte: lastMonthStart, lt: thisMonthStart },
         amount: { gt: 0 },
         pending: false,
@@ -57,6 +67,7 @@ export async function POST() {
     const twoMonthsAgoSpending = await prisma.transaction.groupBy({
       by: ["category"],
       where: {
+        account: { userId: user.id },
         date: { gte: twoMonthsAgoStart, lt: lastMonthStart },
         amount: { gt: 0 },
         pending: false,
@@ -80,7 +91,7 @@ export async function POST() {
     }[] = [];
 
     // Check budget goals
-    const budgets = await prisma.budgetGoal.findMany();
+    const budgets = await prisma.budgetGoal.findMany({ where: { userId: user.id } });
     const thisMonthMap = new Map(
       thisMonthSpending.map((s) => [s.category, s._sum.amount || 0])
     );
@@ -173,6 +184,7 @@ export async function POST() {
     if (process.env.ANTHROPIC_API_KEY && totalThisMonth > 0) {
       const recentAiInsight = await prisma.insight.findFirst({
         where: {
+          userId: user.id,
           type: "AI_SUMMARY",
           createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
         },
@@ -184,6 +196,7 @@ export async function POST() {
           const threeMonthSpending = await prisma.transaction.groupBy({
             by: ["category"],
             where: {
+              account: { userId: user.id },
               date: { gte: threeMonthsAgoStart },
               amount: { gt: 0 },
               pending: false,
@@ -234,6 +247,7 @@ Reply with only your insights as a short paragraph, no bullet points or headings
     // Save new insights (avoid duplicates by checking recent ones)
     const recentInsights = await prisma.insight.findMany({
       where: {
+        userId: user.id,
         createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
       },
     });
@@ -243,7 +257,7 @@ Reply with only your insights as a short paragraph, no bullet points or headings
 
     if (uniqueInsights.length > 0) {
       await prisma.insight.createMany({
-        data: uniqueInsights,
+        data: uniqueInsights.map((i) => ({ ...i, userId: user.id })),
       });
     }
 
@@ -263,6 +277,9 @@ Reply with only your insights as a short paragraph, no bullet points or headings
 // PUT mark insight as read
 export async function PUT(request: NextRequest) {
   try {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
     const parsed = updateInsightSchema.safeParse(body);
     if (!parsed.success) {
@@ -275,7 +292,7 @@ export async function PUT(request: NextRequest) {
     const { id, isRead } = parsed.data;
 
     const insight = await prisma.insight.update({
-      where: { id },
+      where: { id, userId: user.id },
       data: { isRead: isRead ?? true },
     });
 

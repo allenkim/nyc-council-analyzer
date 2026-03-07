@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import { formatCurrency, SPENDING_CATEGORY_LABELS } from "@/lib/categories";
 import AddBudgetForm from "./AddBudgetForm";
 import DeleteBudgetButton from "./DeleteBudgetButton";
@@ -7,7 +9,11 @@ import { startOfMonth } from "date-fns";
 export const dynamic = "force-dynamic";
 
 export default async function BudgetsPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const budgets = await prisma.budgetGoal.findMany({
+    where: { userId: user.id },
     orderBy: { category: "asc" },
   });
 
@@ -18,6 +24,7 @@ export default async function BudgetsPage() {
   const spending = await prisma.transaction.groupBy({
     by: ["category"],
     where: {
+      account: { userId: user.id },
       date: { gte: monthStart },
       amount: { gt: 0 },
       pending: false,

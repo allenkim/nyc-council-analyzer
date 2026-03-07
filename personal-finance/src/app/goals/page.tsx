@@ -1,11 +1,17 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import GoalCard from "./GoalCard";
 import AddGoalForm from "./AddGoalForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function GoalsPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const goals = await prisma.financialGoal.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
 

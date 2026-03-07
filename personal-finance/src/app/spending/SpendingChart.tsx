@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { formatCurrency } from "@/lib/categories";
+import PrivacyValue from "@/components/PrivacyValue";
 
 interface CategoryData {
   category: string;
@@ -79,7 +80,7 @@ export default function SpendingChart({ data, total }: SpendingChartProps) {
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <span className="text-muted">{entry.percent.toFixed(1)}%</span>
-              <span className="font-medium w-20 sm:w-24 text-right">{formatCurrency(entry.amount)}</span>
+              <span className="font-medium w-20 sm:w-24 text-right"><PrivacyValue>{formatCurrency(entry.amount)}</PrivacyValue></span>
             </div>
           </div>
         ))}

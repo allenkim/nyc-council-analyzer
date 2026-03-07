@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import NetWorthCard from "@/components/NetWorthCard";
 import AllocationChart from "@/components/AllocationChart";
 import AccountCard from "@/components/AccountCard";
@@ -9,7 +11,11 @@ import { ASSET_CATEGORIES } from "@/lib/categories";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const accounts = await prisma.account.findMany({
+    where: { userId: user.id },
     include: { holdings: true },
   });
 

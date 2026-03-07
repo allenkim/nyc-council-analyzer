@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createCostBasisSchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const parsed = createCostBasisSchema.safeParse(body);
@@ -15,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     const { holdingId, purchaseDate, purchasePrice, quantity } = parsed.data;
 
-    const holding = await prisma.holding.findUnique({ where: { id: holdingId } });
+    const holding = await prisma.holding.findFirst({ where: { id: holdingId, account: { userId: user.id } } });
     if (!holding) {
       return NextResponse.json({ error: "Holding not found" }, { status: 404 });
     }
@@ -36,6 +40,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) {
@@ -43,7 +50,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    await prisma.costBasis.delete({ where: { id } });
+    await prisma.costBasis.delete({ where: { id, holding: { account: { userId: user.id } } } });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Cost basis entry not found" }, { status: 404 });

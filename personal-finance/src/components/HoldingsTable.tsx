@@ -1,4 +1,5 @@
 import { CATEGORY_COLORS, CATEGORY_LABELS, formatCurrencyExact } from "@/lib/categories";
+import PrivacyValue from "@/components/PrivacyValue";
 
 interface HoldingsTableProps {
   holdings: {
@@ -59,18 +60,20 @@ export default function HoldingsTable({ holdings, totalValue }: HoldingsTablePro
                   {CATEGORY_LABELS[holding.category] || holding.category}
                 </span>
               </td>
-              <td className="py-3 text-right tabular-nums pl-4">{holding.quantity.toLocaleString()}</td>
-              <td className="py-3 text-right tabular-nums pl-4">{formatCurrencyExact(holding.price)}</td>
-              <td className="py-3 text-right font-medium tabular-nums pl-4">{formatCurrencyExact(holding.value)}</td>
+              <td className="py-3 text-right tabular-nums pl-4"><PrivacyValue>{holding.quantity.toLocaleString()}</PrivacyValue></td>
+              <td className="py-3 text-right tabular-nums pl-4"><PrivacyValue>{formatCurrencyExact(holding.price)}</PrivacyValue></td>
+              <td className="py-3 text-right font-medium tabular-nums pl-4"><PrivacyValue>{formatCurrencyExact(holding.value)}</PrivacyValue></td>
               <td className="py-3 text-right tabular-nums pl-4">
                 {holding.totalCostBasis && holding.totalCostBasis > 0 ? (
                   <span className={holding.gainLoss && holding.gainLoss >= 0 ? "text-success" : "text-danger"}>
-                    {holding.gainLoss && holding.gainLoss >= 0 ? "+" : ""}
-                    {formatCurrencyExact(holding.gainLoss || 0)}
-                    <span className="text-xs ml-1">
-                      ({holding.gainLossPercent && holding.gainLossPercent >= 0 ? "+" : ""}
-                      {(holding.gainLossPercent || 0).toFixed(1)}%)
-                    </span>
+                    <PrivacyValue>
+                      {holding.gainLoss && holding.gainLoss >= 0 ? "+" : ""}
+                      {formatCurrencyExact(holding.gainLoss || 0)}
+                      <span className="text-xs ml-1">
+                        ({holding.gainLossPercent && holding.gainLossPercent >= 0 ? "+" : ""}
+                        {(holding.gainLossPercent || 0).toFixed(1)}%)
+                      </span>
+                    </PrivacyValue>
                   </span>
                 ) : (
                   <span className="text-muted">—</span>

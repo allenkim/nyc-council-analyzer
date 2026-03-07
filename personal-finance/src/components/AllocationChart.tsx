@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { CATEGORY_COLORS, CATEGORY_LABELS, formatCurrency, formatPercent } from "@/lib/categories";
+import PrivacyValue from "@/components/PrivacyValue";
 
 interface AllocationData {
   category: string;
@@ -85,7 +86,7 @@ export default function AllocationChart({ data }: AllocationChartProps) {
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <span className="text-muted">{formatPercent(entry.percent)}</span>
-                <span className="font-medium w-20 sm:w-24 text-right">{formatCurrency(entry.value)}</span>
+                <span className="font-medium w-20 sm:w-24 text-right"><PrivacyValue>{formatCurrency(entry.value)}</PrivacyValue></span>
               </div>
             </div>
           ))}

@@ -4,8 +4,12 @@ import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { RemovedTransaction, Transaction } from "plaid";
 import { plaidSyncTransactionsSchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const parsed = plaidSyncTransactionsSchema.safeParse(body);
@@ -20,8 +24,8 @@ export async function POST(request: NextRequest) {
 
     // Get all PlaidItems to sync (or just one if specified)
     const plaidItems = plaidItemId
-      ? await prisma.plaidItem.findMany({ where: { id: plaidItemId } })
-      : await prisma.plaidItem.findMany();
+      ? await prisma.plaidItem.findMany({ where: { id: plaidItemId, userId: user.id } })
+      : await prisma.plaidItem.findMany({ where: { userId: user.id } });
 
     if (plaidItems.length === 0) {
       return NextResponse.json({ error: "No Plaid connections found" }, { status: 404 });

@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createHoldingSchema, updateHoldingSchema } from "@/lib/validation";
 import { computeGainLoss } from "@/lib/holdings";
+import { getUser } from "@/lib/session";
 
 export async function GET() {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const holdings = await prisma.holding.findMany({
+    where: { account: { userId: user.id } },
     include: {
       account: true,
       costBasis: true,
@@ -18,6 +23,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const parsed = createHoldingSchema.safeParse(body);
@@ -29,6 +37,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { accountId, name, category, quantity, price, ticker, costBasisPrice, purchaseDate } = parsed.data;
+
+    // Verify account belongs to user
+    const account = await prisma.account.findFirst({ where: { id: accountId, userId: user.id } });
+    if (!account) {
+      return NextResponse.json({ error: "Account not found" }, { status: 404 });
+    }
 
     const holding = await prisma.holding.create({
       data: {
@@ -61,6 +75,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const parsed = updateHoldingSchema.safeParse(body);
@@ -74,7 +91,7 @@ export async function PUT(request: NextRequest) {
     const { id, name, category, quantity, price, ticker } = parsed.data;
 
     const holding = await prisma.holding.update({
-      where: { id },
+      where: { id, account: { userId: user.id } },
       data: {
         name,
         ticker: ticker || null,
@@ -91,6 +108,9 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) {
@@ -98,7 +118,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    await prisma.holding.delete({ where: { id } });
+    await prisma.holding.delete({ where: { id, account: { userId: user.id } } });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Holding not found" }, { status: 404 });

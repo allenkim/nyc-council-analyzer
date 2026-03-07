@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { addDays, format } from "date-fns";
+import { getUser } from "@/lib/session";
 
 export async function GET() {
   try {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const now = new Date();
     const days = 90;
 
     // Starting balance: sum of all BANK account Cash holdings
     const bankAccounts = await prisma.account.findMany({
-      where: { type: "BANK" },
+      where: { type: "BANK", userId: user.id },
       include: {
         holdings: { where: { category: "CASH" } },
       },
@@ -21,17 +25,17 @@ export async function GET() {
     );
 
     // Get bills for expected outflows
-    const bills = await prisma.bill.findMany();
+    const bills = await prisma.bill.findMany({ where: { userId: user.id } });
 
     // Get recurring spending transactions for additional outflows
     const recurringSpending = await prisma.transaction.findMany({
-      where: { isRecurring: true, amount: { gt: 0 } },
+      where: { account: { userId: user.id }, isRecurring: true, amount: { gt: 0 } },
       orderBy: { date: "desc" },
     });
 
     // Get recurring income (negative amount = money in)
     const recurringIncome = await prisma.transaction.findMany({
-      where: { isRecurring: true, amount: { lt: 0 } },
+      where: { account: { userId: user.id }, isRecurring: true, amount: { lt: 0 } },
       orderBy: { date: "desc" },
     });
 

@@ -3,8 +3,12 @@ import { plaidClient, mapPlaidTypeToCategory } from "@/lib/plaid";
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
 import { plaidSyncSchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json().catch(() => ({}));
     const parsed = plaidSyncSchema.safeParse(body);
@@ -19,8 +23,8 @@ export async function POST(request: NextRequest) {
 
     // Get all PlaidItems to sync (or just one if specified)
     const plaidItems = plaidItemId
-      ? await prisma.plaidItem.findMany({ where: { id: plaidItemId } })
-      : await prisma.plaidItem.findMany();
+      ? await prisma.plaidItem.findMany({ where: { id: plaidItemId, userId: user.id } })
+      : await prisma.plaidItem.findMany({ where: { userId: user.id } });
 
     if (plaidItems.length === 0) {
       return NextResponse.json({ error: "No Plaid connections found" }, { status: 404 });
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
       try {
         // Get our accounts linked to this PlaidItem
         const ourAccounts = await prisma.account.findMany({
-          where: { plaidItemId: item.id },
+          where: { plaidItemId: item.id, userId: user.id },
         });
 
         const accountMap = new Map(

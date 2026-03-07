@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createCreditScoreSchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 // GET credit score history
 export async function GET() {
   try {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const scores = await prisma.creditScore.findMany({
+      where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       take: 12, // Last 12 entries
     });
@@ -42,6 +47,9 @@ export async function GET() {
 // POST add a new credit score entry
 export async function POST(request: NextRequest) {
   try {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
     const parsed = createCreditScoreSchema.safeParse(body);
     if (!parsed.success) {
@@ -57,6 +65,7 @@ export async function POST(request: NextRequest) {
       data: {
         score,
         source: source || "manual",
+        userId: user.id,
       },
     });
 

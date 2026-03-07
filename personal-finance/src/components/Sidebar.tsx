@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import PrivacyToggle from "./PrivacyToggle";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6", group: "overview" },
@@ -26,6 +28,7 @@ const groupLabels: Record<string, string> = {
 export default function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { data: session } = useSession();
 
   const groups = ["overview", "manage", "analysis"];
 
@@ -110,23 +113,32 @@ export default function Sidebar() {
             </div>
           ))}
         </nav>
-        <div className="p-4 border-t border-card-border">
-          <a
-            href="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-accent-light/50 transition-colors"
-          >
-            <svg
-              className="w-[18px] h-[18px] flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Portal
-          </a>
+        <div className="p-4 border-t border-card-border space-y-1">
+          <PrivacyToggle />
+          {session?.user && (
+            <div className="flex items-center gap-3 px-3 py-2.5">
+              {session.user.image && (
+                <img
+                  src={session.user.image}
+                  alt=""
+                  className="w-6 h-6 rounded-full flex-shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+              <span className="text-xs text-muted truncate flex-1">
+                {session.user.email}
+              </span>
+              <button
+                onClick={() => signOut({ callbackUrl: "/finance/login" })}
+                className="text-muted hover:text-foreground transition-colors flex-shrink-0"
+                title="Sign out"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </aside>
     </>

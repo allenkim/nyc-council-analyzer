@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/categories";
 import { apiUrl } from "@/lib/api";
+import PrivacyValue from "@/components/PrivacyValue";
 
 interface Bill {
   id: string;
@@ -94,7 +95,7 @@ export default function BillCard({ bill }: BillCardProps) {
             )}
           </div>
           <p className="text-sm text-muted mt-0.5">{bill.category}</p>
-          <p className="text-lg font-semibold mt-2">{formatCurrency(bill.amount)}</p>
+          <p className="text-lg font-semibold mt-2"><PrivacyValue>{formatCurrency(bill.amount)}</PrivacyValue></p>
           <p className="text-xs text-muted">Due: {getOrdinal(bill.dueDay)} of month</p>
         </div>
         <div className="flex flex-col items-end gap-2">

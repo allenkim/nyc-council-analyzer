@@ -1,17 +1,24 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import TransactionTable from "./TransactionTable";
 import CategoryRulesManager from "./CategoryRulesManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function TransactionsPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const accounts = await prisma.account.findMany({
+    where: { userId: user.id },
     select: { id: true, name: true, institution: true },
     orderBy: { name: "asc" },
   });
 
   const categories = await prisma.transaction.groupBy({
     by: ["category"],
+    where: { account: { userId: user.id } },
     orderBy: { category: "asc" },
   });
 

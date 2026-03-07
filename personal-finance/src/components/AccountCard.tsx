@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/lib/categories";
+import PrivacyValue from "@/components/PrivacyValue";
 
 interface AccountCardProps {
   name: string;
@@ -88,7 +89,7 @@ export default function AccountCard({
       </div>
       <div className="mt-4 flex items-end justify-between">
         <div>
-          <p className="text-2xl font-semibold tracking-tight">{formatCurrency(totalValue)}</p>
+          <p className="text-2xl font-semibold tracking-tight"><PrivacyValue maskLength={8}>{formatCurrency(totalValue)}</PrivacyValue></p>
           <p className="text-xs text-muted mt-1">
             {holdingCount} holding{holdingCount !== 1 ? "s" : ""}
           </p>

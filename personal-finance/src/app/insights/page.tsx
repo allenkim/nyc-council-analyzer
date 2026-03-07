@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import { format } from "date-fns";
 import GenerateInsightsButton from "./GenerateInsightsButton";
 import InsightCard from "./InsightCard";
@@ -6,7 +8,11 @@ import InsightCard from "./InsightCard";
 export const dynamic = "force-dynamic";
 
 export default async function InsightsPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const insights = await prisma.insight.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
@@ -21,10 +27,12 @@ export default async function InsightsPage() {
 
   // Get credit score
   const creditScore = await prisma.creditScore.findFirst({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
 
   const previousScore = await prisma.creditScore.findFirst({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     skip: 1,
   });

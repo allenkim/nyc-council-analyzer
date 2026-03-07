@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 
 const NON_BILL_CATEGORIES = new Set([
   "FOOD_AND_DRINK",
@@ -21,15 +22,18 @@ function normalizeName(name: string): string {
 }
 
 export async function GET() {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     // Get recurring transactions
     const recurring = await prisma.transaction.findMany({
-      where: { isRecurring: true, amount: { gt: 0 } },
+      where: { account: { userId: user.id }, isRecurring: true, amount: { gt: 0 } },
       orderBy: { date: "desc" },
     });
 
     // Get existing bills for matching
-    const bills = await prisma.bill.findMany();
+    const bills = await prisma.bill.findMany({ where: { userId: user.id } });
     const billNames = bills.map((b) => normalizeName(b.name));
 
     // Group recurring by normalized merchant name

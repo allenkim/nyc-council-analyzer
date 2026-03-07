@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import AccountCard from "@/components/AccountCard";
 import HoldingsTable from "@/components/HoldingsTable";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
@@ -14,7 +16,11 @@ import AddCostBasisForm from "./AddCostBasisForm";
 export const dynamic = "force-dynamic";
 
 export default async function AccountsPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const accounts = await prisma.account.findMany({
+    where: { userId: user.id },
     include: {
       holdings: { include: { costBasis: true } },
       plaidItem: true,
@@ -24,10 +30,12 @@ export default async function AccountsPage() {
   });
 
   const plaidItems = await prisma.plaidItem.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
 
   const snapTradeConnections = await prisma.snapTradeConnection.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
 

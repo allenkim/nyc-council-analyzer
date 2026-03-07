@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createBudgetSchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 // GET all budget goals with current spending
 export async function GET() {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const budgets = await prisma.budgetGoal.findMany({
+      where: { userId: user.id },
       orderBy: { category: "asc" },
     });
 
@@ -16,6 +21,7 @@ export async function GET() {
     const spending = await prisma.transaction.groupBy({
       by: ["category"],
       where: {
+        account: { userId: user.id },
         date: { gte: monthStart },
         amount: { gt: 0 },
         pending: false,
@@ -47,6 +53,9 @@ export async function GET() {
 
 // POST create or update a budget goal
 export async function POST(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const parsed = createBudgetSchema.safeParse(body);
@@ -60,9 +69,9 @@ export async function POST(request: NextRequest) {
     const { category, limit } = parsed.data;
 
     const budget = await prisma.budgetGoal.upsert({
-      where: { category },
+      where: { userId_category: { category, userId: user.id } },
       update: { limit },
-      create: { category, limit },
+      create: { category, limit, userId: user.id },
     });
 
     return NextResponse.json(budget);
@@ -77,6 +86,9 @@ export async function POST(request: NextRequest) {
 
 // DELETE a budget goal
 export async function DELETE(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -85,7 +97,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    await prisma.budgetGoal.delete({ where: { id } });
+    await prisma.budgetGoal.delete({ where: { id, userId: user.id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting budget:", error);

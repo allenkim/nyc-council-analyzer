@@ -32,6 +32,7 @@ services:
     environment:
       - HOSTNAME=0.0.0.0
       - DATABASE_URL=file:/app/data/finance.db
+      - AUTH_TRUST_HOST=true
     env_file:
       - path: personal-finance/.env
         required: false

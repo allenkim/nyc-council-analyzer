@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import NetWorthHistory from "@/components/NetWorthHistory";
 import { formatCurrency } from "@/lib/categories";
 import { format } from "date-fns";
@@ -7,7 +9,11 @@ import TakeSnapshotButton from "./TakeSnapshotButton";
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const snapshots = await prisma.snapshot.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "asc" },
     include: { holdings: true },
   });

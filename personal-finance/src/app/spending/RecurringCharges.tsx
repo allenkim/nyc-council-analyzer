@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/lib/categories";
+import PrivacyValue from "@/components/PrivacyValue";
 
 interface RecurringCharge {
   name: string;
@@ -24,7 +25,7 @@ export default function RecurringCharges({ charges }: RecurringChargesProps) {
         <h3 className="text-sm font-medium text-muted">Recurring Charges</h3>
         <div className="text-right">
           <span className="text-xs text-muted">Est. Monthly Total</span>
-          <p className="font-semibold">{formatCurrency(monthlyTotal)}</p>
+          <p className="font-semibold"><PrivacyValue>{formatCurrency(monthlyTotal)}</PrivacyValue></p>
         </div>
       </div>
 
@@ -41,7 +42,7 @@ export default function RecurringCharges({ charges }: RecurringChargesProps) {
               </p>
             </div>
             <div className="text-right">
-              <p className="font-medium text-sm">{formatCurrency(charge.amount)}</p>
+              <p className="font-medium text-sm"><PrivacyValue>{formatCurrency(charge.amount)}</PrivacyValue></p>
               <p className="text-xs text-muted">per charge</p>
             </div>
           </div>

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createBillSchema, updateBillSchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 // GET all bills
 export async function GET() {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const bills = await prisma.bill.findMany({
+      where: { userId: user.id },
       orderBy: { dueDay: "asc" },
     });
 
@@ -39,6 +44,9 @@ export async function GET() {
 
 // POST create a new bill
 export async function POST(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const parsed = createBillSchema.safeParse(body);
@@ -59,6 +67,7 @@ export async function POST(request: NextRequest) {
         category,
         isAutoPay: isAutoPay || false,
         notes,
+        userId: user.id,
       },
     });
 
@@ -74,6 +83,9 @@ export async function POST(request: NextRequest) {
 
 // PUT update a bill (mark as paid, update details)
 export async function PUT(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const parsed = updateBillSchema.safeParse(body);
@@ -92,7 +104,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const bill = await prisma.bill.update({
-      where: { id },
+      where: { id, userId: user.id },
       data,
     });
 
@@ -108,6 +120,9 @@ export async function PUT(request: NextRequest) {
 
 // DELETE a bill
 export async function DELETE(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -116,7 +131,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    await prisma.bill.delete({ where: { id } });
+    await prisma.bill.delete({ where: { id, userId: user.id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting bill:", error);

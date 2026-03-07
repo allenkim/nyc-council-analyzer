@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import { formatCurrency } from "@/lib/categories";
 import AddBillForm from "./AddBillForm";
 import BillCard from "./BillCard";
@@ -8,7 +10,11 @@ import BillSuggestions from "./BillSuggestion";
 export const dynamic = "force-dynamic";
 
 export default async function BillsPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const bills = await prisma.bill.findMany({
+    where: { userId: user.id },
     orderBy: { dueDay: "asc" },
   });
 

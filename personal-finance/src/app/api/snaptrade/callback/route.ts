@@ -3,8 +3,12 @@ import { prisma } from "@/lib/db";
 import { snaptradeClient } from "@/lib/snaptrade";
 import { encrypt } from "@/lib/crypto";
 import { snapTradeCallbackSchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const parsed = snapTradeCallbackSchema.safeParse(body);
@@ -56,10 +60,11 @@ export async function POST(request: NextRequest) {
     // Create the SnapTradeConnection record
     const snapTradeConnection = await prisma.snapTradeConnection.create({
       data: {
-        userId,
+        snapTradeUserId: userId,
         userSecret: encrypt(userSecret),
         authorizationId,
         institution: institutionName,
+        userId: user.id,
       },
     });
 
@@ -73,6 +78,7 @@ export async function POST(request: NextRequest) {
           type: "BROKERAGE",
           snapTradeConnectionId: snapTradeConnection.id,
           snapTradeAccountId: stAccount.id,
+          userId: user.id,
         },
       });
       createdAccounts.push(account);

@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import {
   ASSET_CATEGORIES,
   CATEGORY_COLORS,
@@ -11,7 +13,11 @@ import HoldingsTable from "@/components/HoldingsTable";
 export const dynamic = "force-dynamic";
 
 export default async function BreakdownPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const holdings = await prisma.holding.findMany({
+    where: { account: { userId: user.id } },
     include: { account: true },
     orderBy: { value: "desc" },
   });

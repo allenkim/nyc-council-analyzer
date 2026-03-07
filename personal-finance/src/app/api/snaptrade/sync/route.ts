@@ -3,8 +3,12 @@ import { prisma } from "@/lib/db";
 import { snaptradeClient, mapSnapTradeCategory } from "@/lib/snaptrade";
 import { decrypt } from "@/lib/crypto";
 import { snapTradeSyncSchema } from "@/lib/validation";
+import { getUser } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
+  const user = await getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json().catch(() => ({}));
     const parsed = snapTradeSyncSchema.safeParse(body);
@@ -20,9 +24,9 @@ export async function POST(request: NextRequest) {
     // Get all SnapTradeConnections to sync (or just one if specified)
     const connections = snapTradeConnectionId
       ? await prisma.snapTradeConnection.findMany({
-          where: { id: snapTradeConnectionId },
+          where: { id: snapTradeConnectionId, userId: user.id },
         })
-      : await prisma.snapTradeConnection.findMany();
+      : await prisma.snapTradeConnection.findMany({ where: { userId: user.id } });
 
     if (connections.length === 0) {
       return NextResponse.json(
@@ -35,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     for (const connection of connections) {
       try {
-        const { userId } = connection;
+        const { snapTradeUserId } = connection;
         const userSecret = decrypt(connection.userSecret);
 
         // Get our accounts linked to this connection
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
             const holdingsResponse =
               await snaptradeClient.accountInformation.getUserHoldings({
                 accountId: snapTradeAccountId,
-                userId,
+                userId: snapTradeUserId,
                 userSecret,
               });
 

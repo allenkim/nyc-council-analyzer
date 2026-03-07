@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { getUser } from "@/lib/session";
 import { formatCurrency, SPENDING_CATEGORY_COLORS, SPENDING_CATEGORY_LABELS } from "@/lib/categories";
 import SpendingChart from "./SpendingChart";
 import RecurringCharges from "./RecurringCharges";
@@ -8,6 +10,9 @@ import { startOfMonth, subMonths, format } from "date-fns";
 export const dynamic = "force-dynamic";
 
 export default async function SpendingPage() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+
   const now = new Date();
   const thisMonthStart = startOfMonth(now);
   const lastMonthStart = startOfMonth(subMonths(now, 1));
@@ -15,6 +20,7 @@ export default async function SpendingPage() {
   // Get this month's transactions
   const thisMonthTxns = await prisma.transaction.findMany({
     where: {
+      account: { userId: user.id },
       date: { gte: thisMonthStart },
       amount: { gt: 0 }, // Spending only
       pending: false,
@@ -25,6 +31,7 @@ export default async function SpendingPage() {
   // Get last month's transactions
   const lastMonthTxns = await prisma.transaction.findMany({
     where: {
+      account: { userId: user.id },
       date: { gte: lastMonthStart, lt: thisMonthStart },
       amount: { gt: 0 },
       pending: false,
@@ -34,6 +41,7 @@ export default async function SpendingPage() {
   // Get recurring transactions
   const recurringTxns = await prisma.transaction.findMany({
     where: {
+      account: { userId: user.id },
       isRecurring: true,
       amount: { gt: 0 },
     },

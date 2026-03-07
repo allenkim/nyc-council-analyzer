@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/categories";
 import { apiUrl } from "@/lib/api";
+import PrivacyValue from "@/components/PrivacyValue";
 import { format } from "date-fns";
 
 interface GoalCardProps {
@@ -73,8 +74,8 @@ export default function GoalCard({ goal }: GoalCardProps) {
       {/* Progress bar */}
       <div>
         <div className="flex items-center justify-between text-sm mb-1">
-          <span className="font-medium">{formatCurrency(goal.currentAmount)}</span>
-          <span className="text-muted">{formatCurrency(goal.targetAmount)}</span>
+          <span className="font-medium"><PrivacyValue>{formatCurrency(goal.currentAmount)}</PrivacyValue></span>
+          <span className="text-muted"><PrivacyValue>{formatCurrency(goal.targetAmount)}</PrivacyValue></span>
         </div>
         <div className="w-full h-2.5 bg-accent-light rounded-full overflow-hidden">
           <div
