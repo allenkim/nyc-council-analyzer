@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/session";
 import AccountCard from "@/components/AccountCard";
-import HoldingsTable from "@/components/HoldingsTable";
+import EditableHoldingsTable from "@/components/EditableHoldingsTable";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import SnapTradeLinkButton from "@/components/SnapTradeLinkButton";
 import SyncButton from "@/components/SyncButton";
@@ -169,9 +169,10 @@ export default async function AccountsPage() {
                       />
                     )}
                   </div>
-                  <HoldingsTable
+                  <EditableHoldingsTable
                     holdings={account.holdings.map(computeGainLoss)}
                     totalValue={totalValue}
+                    editable={!isAutoSynced}
                   />
                   {account.holdings.length > 0 && (
                     <div className="mt-2 space-y-1">
