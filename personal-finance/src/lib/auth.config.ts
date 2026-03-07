@@ -19,7 +19,12 @@ export const authConfig: NextAuthConfig = {
     signIn: "/finance/login",
   },
   callbacks: {
-    authorized({ auth }) {
+    authorized({ auth, request }) {
+      const { pathname } = request.nextUrl;
+      // Allow auth routes and login page through without a session
+      if (pathname.startsWith("/api/auth") || pathname === "/login") {
+        return true;
+      }
       if (!auth?.user?.email) return false;
       return ALLOWED_EMAILS.includes(auth.user.email);
     },
