@@ -13,20 +13,14 @@ FROM node:22-slim
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-# Copy standalone build output + required assets
+# Copy standalone build output + full node_modules (needed for prisma migrate)
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src/generated ./src/generated
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules/.package-lock.json ./node_modules/.package-lock.json
-
-# Copy prisma CLI and all its dependencies for migrate deploy
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
-COPY --from=builder /app/node_modules/@prisma/dev ./node_modules/@prisma/dev
 
 RUN mkdir -p /app/data
 
@@ -39,4 +33,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 USER appuser
 
 EXPOSE 3000
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
