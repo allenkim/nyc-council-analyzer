@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { apiUrl } from "@/lib/api";
 
 interface Profile {
@@ -17,9 +18,11 @@ interface Profile {
 }
 
 export default function ProfileForm() {
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showOptional, setShowOptional] = useState(false);
   const [form, setForm] = useState({
     age: "",
@@ -54,12 +57,16 @@ export default function ProfileForm() {
           });
         }
       })
+      .catch(() => {
+        // profile fetch failed — form will use defaults
+      })
       .finally(() => setLoading(false));
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setError(null);
 
     const body: Record<string, unknown> = {
       age: parseInt(form.age),
@@ -75,18 +82,26 @@ export default function ProfileForm() {
     if (form.isHomeowner) body.isHomeowner = form.isHomeowner === "true";
     if (form.monthlyTakeHome) body.monthlyTakeHome = parseFloat(form.monthlyTakeHome);
 
-    const res = await fetch(apiUrl("/api/profile"), {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    try {
+      const res = await fetch(apiUrl("/api/profile"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      setProfile(data);
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+        router.refresh();
+      } else {
+        const err = await res.text();
+        setError(err || "Failed to save profile");
+      }
+    } catch {
+      setError("Network error — please try again");
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   }
 
   if (loading) return <div className="text-muted text-sm">Loading profile...</div>;
@@ -164,6 +179,8 @@ export default function ProfileForm() {
           </div>
         </div>
       )}
+
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <button type="submit" disabled={saving || !form.age || !form.annualIncome} className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 disabled:opacity-50 transition-colors">
         {saving ? "Saving..." : profile ? "Update Profile" : "Save Profile"}

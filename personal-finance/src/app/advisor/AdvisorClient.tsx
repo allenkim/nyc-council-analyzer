@@ -7,7 +7,7 @@ import RecommendationCard from "./RecommendationCard";
 import GenerateButton from "./GenerateButton";
 import AddCreditScoreForm from "../insights/AddCreditScoreForm";
 
-interface Recommendation {
+export interface Recommendation {
   id: string;
   type: string;
   category: string;
@@ -49,6 +49,9 @@ export default function AdvisorClient({
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setRecommendations(data);
+      })
+      .catch(() => {
+        // silently ignore refresh errors — stale data is acceptable
       });
   }, []);
 

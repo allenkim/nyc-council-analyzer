@@ -2,16 +2,7 @@
 
 import { useState } from "react";
 import { apiUrl } from "@/lib/api";
-
-interface Recommendation {
-  id: string;
-  type: string;
-  category: string;
-  title: string;
-  summary: string;
-  details: string | null;
-  priority: number;
-}
+import type { Recommendation } from "./AdvisorClient";
 
 export default function RecommendationCard({
   rec,
@@ -25,9 +16,12 @@ export default function RecommendationCard({
 
   async function handleDismiss() {
     setDismissing(true);
-    const res = await fetch(apiUrl(`/api/advisor/${rec.id}`), { method: "PATCH" });
-    if (res.ok) onDismiss(rec.id);
-    setDismissing(false);
+    try {
+      const res = await fetch(apiUrl(`/api/advisor/${rec.id}`), { method: "PATCH" });
+      if (res.ok) onDismiss(rec.id);
+    } finally {
+      setDismissing(false);
+    }
   }
 
   const priorityColor =
