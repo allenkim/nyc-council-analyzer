@@ -6,7 +6,7 @@ import { plaidSyncSchema } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const parsed = plaidSyncSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -94,22 +94,24 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // Clean up any stale duplicate Cash holdings (plaidSecurityId: null)
-          // that were created by a previous bug. Investment cash is already
-          // included in the holdings array as a cash-type security.
-          for (const [, account] of accountMap) {
-            await prisma.holding.deleteMany({
-              where: {
-                accountId: account.id,
-                category: "CASH",
-                plaidSecurityId: null,
-              },
-            });
-          }
-
           holdingsCount = holdings.length;
         } catch {
           // investmentsHoldingsGet fails for non-investment accounts — that's expected
+        }
+
+        // Clean up stale duplicate Cash holdings (plaidSecurityId: null) on
+        // BROKERAGE accounts. Investment cash is already included in holdings
+        // as a cash-type security from Plaid. This runs outside the try/catch
+        // so it executes even if investmentsHoldingsGet throws.
+        for (const [, account] of accountMap) {
+          if (account.type !== "BROKERAGE") continue;
+          await prisma.holding.deleteMany({
+            where: {
+              accountId: account.id,
+              category: "CASH",
+              plaidSecurityId: null,
+            },
+          });
         }
 
         // Fetch balances for all accounts (works for bank accounts too)
