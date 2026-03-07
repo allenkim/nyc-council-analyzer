@@ -19,12 +19,14 @@ export default async function DashboardPage() {
     include: { holdings: true },
   });
 
+  // Pre-compute per-account values once
+  const accountsWithValue = accounts.map((a) => ({
+    ...a,
+    totalValue: a.holdings.reduce((sum, h) => sum + h.value, 0),
+  }));
+
   // Sort accounts by total value descending so high-value accounts appear first
-  accounts.sort((a, b) => {
-    const aVal = a.holdings.reduce((sum, h) => sum + h.value, 0);
-    const bVal = b.holdings.reduce((sum, h) => sum + h.value, 0);
-    return bVal - aVal;
-  });
+  accountsWithValue.sort((a, b) => b.totalValue - a.totalValue);
 
   const allHoldings = accounts.flatMap((a) => a.holdings);
   const netWorth = allHoldings.reduce((sum, h) => sum + h.value, 0);
@@ -35,6 +37,9 @@ export default async function DashboardPage() {
       .filter((h) => h.category === category)
       .reduce((sum, h) => sum + h.value, 0),
   }));
+
+  const activeAccounts = accountsWithValue.filter((a) => a.totalValue > 0);
+  const zeroAccounts = accountsWithValue.filter((a) => a.totalValue === 0);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -53,32 +58,28 @@ export default async function DashboardPage() {
 
       <CashFlowForecast />
 
-      {accounts.length > 0 ? (
+      {accountsWithValue.length > 0 ? (
         <div>
           <h3 className="text-sm font-medium text-muted mb-3">Accounts</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accounts
-              .filter((a) => a.holdings.reduce((sum, h) => sum + h.value, 0) > 0)
-              .map((account) => (
+            {activeAccounts.map((account) => (
               <AccountCard
                 key={account.id}
                 name={account.name}
                 institution={account.institution}
                 type={account.type}
-                totalValue={account.holdings.reduce((sum, h) => sum + h.value, 0)}
+                totalValue={account.totalValue}
                 holdingCount={account.holdings.length}
               />
             ))}
           </div>
-          {accounts.some((a) => a.holdings.reduce((sum, h) => sum + h.value, 0) === 0) && (
+          {zeroAccounts.length > 0 && (
             <details className="mt-4">
               <summary className="cursor-pointer text-sm text-muted hover:text-foreground transition-colors">
-                {accounts.filter((a) => a.holdings.reduce((sum, h) => sum + h.value, 0) === 0).length} accounts with $0 balance
+                {zeroAccounts.length} accounts with $0 balance
               </summary>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3 opacity-60">
-                {accounts
-                  .filter((a) => a.holdings.reduce((sum, h) => sum + h.value, 0) === 0)
-                  .map((account) => (
+                {zeroAccounts.map((account) => (
                   <AccountCard
                     key={account.id}
                     name={account.name}

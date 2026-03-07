@@ -19,25 +19,25 @@ export default async function AccountsPage() {
   const user = await getUser();
   if (!user) redirect("/login");
 
-  const accounts = await prisma.account.findMany({
-    where: { userId: user.id },
-    include: {
-      holdings: { include: { costBasis: true } },
-      plaidItem: true,
-      snapTradeConnection: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const plaidItems = await prisma.plaidItem.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const snapTradeConnections = await prisma.snapTradeConnection.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const [accounts, plaidItems, snapTradeConnections] = await Promise.all([
+    prisma.account.findMany({
+      where: { userId: user.id },
+      include: {
+        holdings: { include: { costBasis: true } },
+        plaidItem: true,
+        snapTradeConnection: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.plaidItem.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.snapTradeConnection.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   const totalValue = accounts.reduce(
     (sum, a) => sum + a.holdings.reduce((s, h) => s + h.value, 0),

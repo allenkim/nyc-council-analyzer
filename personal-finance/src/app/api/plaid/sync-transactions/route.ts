@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Load category rules once for the entire sync batch
     const categoryRules = await prisma.categoryRule.findMany({
+      where: { userId: user.id },
       orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
     });
 
@@ -212,15 +213,7 @@ async function removeTransaction(removed: RemovedTransaction) {
   }
 }
 
-function normalizeMerchantName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[*#]+/g, "") // strip * and #
-    .replace(/\b(inc|llc|corp|ltd|co)\b\.?/gi, "") // strip corporate suffixes
-    .replace(/\d+$/g, "") // strip trailing numbers
-    .replace(/\s+/g, " ") // collapse whitespace
-    .trim();
-}
+import { normalizeMerchantName } from "@/lib/merchant";
 
 const KNOWN_BILLING_PERIODS = [7, 14, 30, 60, 90];
 

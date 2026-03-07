@@ -1,20 +1,16 @@
 import { auth } from "./auth";
-import { prisma } from "./db";
 
 export type AuthUser = { id: string; email: string };
 
 /**
  * Get the authenticated user from the session.
- * Returns null if not authenticated or user not found in DB.
+ * Returns null if not authenticated. Reads userId directly from the JWT
+ * session (set by the jwt/session callbacks in auth.ts) — no extra DB query.
  */
 export async function getUser(): Promise<AuthUser | null> {
   const session = await auth();
+  const id = (session?.user as Record<string, unknown> | undefined)?.id as string | undefined;
   const email = session?.user?.email;
-  if (!email) return null;
-
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, email: true },
-  });
-  return user;
+  if (!id || !email) return null;
+  return { id, email };
 }

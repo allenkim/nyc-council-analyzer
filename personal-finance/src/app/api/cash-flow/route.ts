@@ -74,6 +74,7 @@ export async function GET() {
     }[] = [];
 
     let balance = startingBalance;
+    const billNames = new Set(bills.map((b) => b.name.toLowerCase()));
 
     for (let i = 0; i <= days; i++) {
       const date = addDays(now, i);
@@ -89,7 +90,6 @@ export async function GET() {
       }
 
       // Recurring spending on this day (avoid double-counting with bills)
-      const billNames = new Set(bills.map((b) => b.name.toLowerCase()));
       for (const outflow of recurringOutflows) {
         if (outflow.dayOfMonth === dayOfMonth && !billNames.has(outflow.name.toLowerCase())) {
           events.push({ name: outflow.name, amount: -outflow.amount });

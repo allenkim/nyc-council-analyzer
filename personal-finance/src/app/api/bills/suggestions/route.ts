@@ -11,15 +11,7 @@ const NON_BILL_CATEGORIES = new Set([
   "PERSONAL_CARE",
 ]);
 
-function normalizeName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[*#]+/g, "")
-    .replace(/\b(inc|llc|corp|ltd|co)\b\.?/gi, "")
-    .replace(/\d+$/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+import { normalizeMerchantName as normalizeName } from "@/lib/merchant";
 
 export async function GET() {
   const user = await getUser();

@@ -17,36 +17,33 @@ export default async function SpendingPage() {
   const thisMonthStart = startOfMonth(now);
   const lastMonthStart = startOfMonth(subMonths(now, 1));
 
-  // Get this month's transactions
-  const thisMonthTxns = await prisma.transaction.findMany({
-    where: {
-      account: { userId: user.id },
-      date: { gte: thisMonthStart },
-      amount: { gt: 0 }, // Spending only
-      pending: false,
-    },
-    include: { account: true },
-  });
-
-  // Get last month's transactions
-  const lastMonthTxns = await prisma.transaction.findMany({
-    where: {
-      account: { userId: user.id },
-      date: { gte: lastMonthStart, lt: thisMonthStart },
-      amount: { gt: 0 },
-      pending: false,
-    },
-  });
-
-  // Get recurring transactions
-  const recurringTxns = await prisma.transaction.findMany({
-    where: {
-      account: { userId: user.id },
-      isRecurring: true,
-      amount: { gt: 0 },
-    },
-    orderBy: { merchantName: "asc" },
-  });
+  const [thisMonthTxns, lastMonthTxns, recurringTxns] = await Promise.all([
+    prisma.transaction.findMany({
+      where: {
+        account: { userId: user.id },
+        date: { gte: thisMonthStart },
+        amount: { gt: 0 },
+        pending: false,
+      },
+      include: { account: true },
+    }),
+    prisma.transaction.findMany({
+      where: {
+        account: { userId: user.id },
+        date: { gte: lastMonthStart, lt: thisMonthStart },
+        amount: { gt: 0 },
+        pending: false,
+      },
+    }),
+    prisma.transaction.findMany({
+      where: {
+        account: { userId: user.id },
+        isRecurring: true,
+        amount: { gt: 0 },
+      },
+      orderBy: { merchantName: "asc" },
+    }),
+  ]);
 
   // Calculate totals
   const thisMonthTotal = thisMonthTxns.reduce((sum, t) => sum + t.amount, 0);

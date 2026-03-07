@@ -44,11 +44,12 @@ export async function POST(request: NextRequest) {
         );
 
         let holdingsCount = 0;
+        const decryptedToken = decrypt(item.accessToken);
 
         // Try to fetch investment holdings (will fail for bank-only accounts)
         try {
           const holdingsResponse = await plaidClient.investmentsHoldingsGet({
-            access_token: decrypt(item.accessToken),
+            access_token: decryptedToken,
           });
 
           const { accounts, holdings, securities } = holdingsResponse.data;
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
 
         // Fetch balances for all accounts (works for bank accounts too)
         const accountsResponse = await plaidClient.accountsGet({
-          access_token: decrypt(item.accessToken),
+          access_token: decryptedToken,
         });
 
         for (const plaidAccount of accountsResponse.data.accounts) {
