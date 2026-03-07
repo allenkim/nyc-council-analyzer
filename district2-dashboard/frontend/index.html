@@ -20,9 +20,7 @@
             <span class="status-dot"></span>
             <span id="status-text">Live</span>
             <span id="data-count"></span>
-            <span id="header-user"></span>
             <a href="/" class="header-link">Portal</a>
-            <button id="signout-btn" class="btn-signout">Sign Out</button>
         </div>
     </header>
 
@@ -453,25 +451,6 @@
             }
         }, 300000);
 
-        // Header user display
-        async function loadHeaderUser() {
-            try {
-                const resp = await fetch('/auth/me');
-                if (resp.ok) {
-                    const data = await resp.json();
-                    document.getElementById('header-user').textContent = data.user.username;
-                }
-            } catch (e) { /* ignore */ }
-        }
-
-        async function signOutFromDashboard() {
-            await fetch('/auth/logout', { method: 'POST' });
-            window.location.href = '/login';
-        }
-
-        document.getElementById('signout-btn').addEventListener('click', signOutFromDashboard);
-
-        loadHeaderUser();
     </script>
 </body>
 </html>

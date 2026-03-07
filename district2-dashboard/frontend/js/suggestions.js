@@ -5,21 +5,13 @@
 
 let allSuggestions = [];
 let currentFilter = 'active';
-let currentUserRole = null;
 
 async function loadSuggestionsTab() {
     try {
-        const [meResp, sugResp] = await Promise.all([
-            fetch('/auth/me'),
-            fetch('/api/suggestions'),
-        ]);
+        const resp = await fetch('/api/suggestions');
+        if (!resp.ok) throw new Error('Failed to load');
 
-        if (!meResp.ok || !sugResp.ok) throw new Error('Failed to load');
-
-        const meData = await meResp.json();
-        currentUserRole = meData.user.role;
-
-        allSuggestions = await sugResp.json();
+        allSuggestions = await resp.json();
         updateSuggestionStats();
         renderSuggestions();
     } catch (e) {
@@ -64,11 +56,11 @@ function renderSuggestions() {
         const statusLabel = s.status === 'in_progress' ? 'In Progress'
             : s.status.charAt(0).toUpperCase() + s.status.slice(1);
 
-        const adminActions = currentUserRole === 'admin' ? `
+        const adminActions = `
             <div class="suggestion-actions">
                 <button onclick="openStatusModal(${s.id}, '${escapeAttr(s.status)}', '${escapeAttr(s.admin_note || '')}')">Update</button>
                 <button class="btn-delete" onclick="deleteSuggestion(${s.id})">Delete</button>
-            </div>` : '';
+            </div>`;
 
         const adminNote = s.admin_note ? `
             <div class="suggestion-admin-note">

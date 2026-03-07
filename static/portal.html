@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal — Whatisms</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0b0e14;
+            color: #e6edf3;
+            min-height: 100vh;
+        }
+        .portal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            background: rgba(19, 23, 32, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid #252d3a;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .portal-header h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #e6edf3;
+            letter-spacing: -0.02em;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header-actions span {
+            color: #8b949e;
+            font-size: 0.875rem;
+        }
+        .btn-signout {
+            padding: 6px 14px;
+            background: transparent;
+            border: 1px solid #da3633;
+            color: #f85149;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-signout:hover {
+            background: rgba(218, 54, 51, 0.15);
+        }
+        .portal-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 64px 32px;
+        }
+        .portal-greeting { margin-bottom: 48px; }
+        .portal-greeting h2 {
+            font-size: 2rem;
+            font-weight: 300;
+            color: #e6edf3;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+        }
+        .portal-greeting h2 strong { font-weight: 600; }
+        .portal-greeting p {
+            color: #7d8ba0;
+            font-size: 0.95rem;
+            margin-top: 8px;
+        }
+        .section-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #5b8def;
+            margin-bottom: 16px;
+        }
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .project-tile {
+            position: relative;
+            background: #131720;
+            border: 1px solid #252d3a;
+            border-radius: 16px;
+            padding: 28px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow: hidden;
+        }
+        .project-tile::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--tile-accent, #5b8def), transparent);
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .project-tile:hover {
+            border-color: #3d4b63;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+        .project-tile:hover::before { opacity: 1; }
+        .tile-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .project-tile h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e6edf3;
+            letter-spacing: -0.01em;
+        }
+        .project-tile p {
+            font-size: 0.875rem;
+            color: #7d8ba0;
+            line-height: 1.6;
+        }
+        .tile-arrow {
+            color: #3d4b63;
+            transition: all 0.25s;
+            margin-left: auto;
+        }
+        .project-tile:hover .tile-arrow {
+            color: #5b8def;
+            transform: translateX(3px);
+        }
+        @media (max-width: 640px) {
+            .portal-container { padding: 32px 20px; }
+            .portal-greeting h2 { font-size: 1.5rem; }
+            .projects-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="portal-header">
+        <h1>Whatisms</h1>
+        <div class="header-actions">
+            <span id="user-display"></span>
+            <button class="btn-signout" id="signout-btn">Sign Out</button>
+        </div>
+    </div>
+    <div class="portal-container">
+        <div class="portal-greeting">
+            <h2>Welcome back<span id="greeting-name"></span></h2>
+            <p>Select a project to get started.</p>
+        </div>
+        <div class="section-label">Your Projects</div>
+        <div class="projects-grid">
+            <a href="/district2" class="project-tile" style="--tile-accent: #5b8def;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div class="tile-icon" style="background:rgba(91,141,239,0.12)">&#x1f5fd;</div>
+                    <svg class="tile-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </div>
+                <div>
+                    <h3>NYC Council District 2</h3>
+                    <p>Real-time intelligence dashboard for the Lower East Side, East Village, Greenwich Village, and surrounding neighborhoods.</p>
+                </div>
+            </a>
+            <a href="/finance" class="project-tile" style="--tile-accent: #3fb950;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div class="tile-icon" style="background:rgba(63,185,80,0.12)">&#x1f4b0;</div>
+                    <svg class="tile-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </div>
+                <div>
+                    <h3>Personal Finance</h3>
+                    <p>Personal finance tracker with Plaid bank syncing, budgets, and spending insights.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+    <script>
+        async function loadUser() {
+            try {
+                const resp = await fetch('/finance/api/auth/session');
+                const session = await resp.json();
+                if (session?.user?.name) {
+                    const name = session.user.name.split(' ')[0];
+                    document.getElementById('greeting-name').textContent = ', ' + name;
+                    document.getElementById('user-display').textContent = session.user.email;
+                }
+            } catch (e) {}
+        }
+
+        async function signOut() {
+            try {
+                const csrfResp = await fetch('/finance/api/auth/csrf');
+                const { csrfToken } = await csrfResp.json();
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/finance/api/auth/signout';
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfToken';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+
+                const cbInput = document.createElement('input');
+                cbInput.type = 'hidden';
+                cbInput.name = 'callbackUrl';
+                cbInput.value = '/login';
+                form.appendChild(cbInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            } catch (e) {
+                window.location.href = '/login';
+            }
+        }
+
+        document.getElementById('signout-btn').addEventListener('click', signOut);
+        loadUser();
+    </script>
+</body>
+</html>

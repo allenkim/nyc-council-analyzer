@@ -2,8 +2,6 @@ import aiosqlite
 import logging
 import os
 
-import bcrypt
-
 logger = logging.getLogger(__name__)
 
 from config import DB_PATH, DATA_DIR
@@ -187,46 +185,13 @@ CREATE TABLE IF NOT EXISTS pin_tags (
     is_custom INTEGER DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'user',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS sessions (
-    token TEXT PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    expires_at TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
-
-CREATE TABLE IF NOT EXISTS projects (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    slug TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    description TEXT,
-    path TEXT NOT NULL,
-    is_active INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS user_projects (
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, project_id)
-);
-
 CREATE TABLE IF NOT EXISTS suggestions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     description TEXT,
     type TEXT NOT NULL DEFAULT 'suggestion',
     status TEXT NOT NULL DEFAULT 'open',
-    submitted_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    submitted_by INTEGER NOT NULL DEFAULT 0,
     admin_note TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -256,23 +221,6 @@ async def init_db():
         for col in ("head_officer", "officer", "managing_agent", "corporation_name"):
             if col not in existing_cols:
                 await db.execute(f"ALTER TABLE hpd_violations ADD COLUMN {col} TEXT")
-        # Migrate: drop old suggestions table (different schema from removed feature)
-        cursor = await db.execute("PRAGMA table_info(suggestions)")
-        old_cols = {row[1] for row in await cursor.fetchall()}
-        if old_cols and "title" not in old_cols:
-            await db.execute("DROP TABLE IF EXISTS suggestions")
-            await db.execute("""CREATE TABLE IF NOT EXISTS suggestions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL, description TEXT,
-                type TEXT NOT NULL DEFAULT 'suggestion',
-                status TEXT NOT NULL DEFAULT 'open',
-                submitted_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                admin_note TEXT,
-                created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-            )""")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_suggestions_status ON suggestions(status)")
-            await db.execute("CREATE INDEX IF NOT EXISTS idx_suggestions_created ON suggestions(created_at)")
         # Seed default pin tags
         default_tags = [
             ("Issue", "circle-exclamation", "#f74f4f", 0),
@@ -286,32 +234,6 @@ async def init_db():
             await db.execute(
                 "INSERT OR IGNORE INTO pin_tags (name, icon, color, is_custom) VALUES (?, ?, ?, ?)",
                 (name, icon, color, is_custom),
-            )
-        # Seed admin user
-        existing = await db.execute("SELECT id FROM users WHERE username = 'allen'")
-        if not await existing.fetchone():
-            admin_password = os.environ.get("ADMIN_DEFAULT_PASSWORD")
-            if admin_password:
-                pw_hash = bcrypt.hashpw(admin_password.encode(), bcrypt.gensalt()).decode()
-                await db.execute(
-                    "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                    ("allen", pw_hash, "admin"),
-                )
-            else:
-                logger.warning("ADMIN_DEFAULT_PASSWORD not set — skipping admin user seed")
-        # Seed default project
-        existing = await db.execute("SELECT id FROM projects WHERE slug = 'district2'")
-        if not await existing.fetchone():
-            await db.execute(
-                "INSERT INTO projects (slug, name, description, path) VALUES (?, ?, ?, ?)",
-                ("district2", "NYC Council District 2", "Real-time intelligence dashboard for the Lower East Side, East Village, Greenwich Village, and surrounding neighborhoods.", "/district2"),
-            )
-        # Seed personal-finance project
-        existing = await db.execute("SELECT id FROM projects WHERE slug = 'finance'")
-        if not await existing.fetchone():
-            await db.execute(
-                "INSERT INTO projects (slug, name, description, path) VALUES (?, ?, ?, ?)",
-                ("finance", "Personal Finance", "Personal finance tracker with Plaid bank syncing, budgets, and spending insights.", "/finance"),
             )
         await db.commit()
     finally:

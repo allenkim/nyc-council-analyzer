@@ -11,12 +11,11 @@ sys.path.insert(0, os.path.dirname(__file__))
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from config import (
     DATASETS,
@@ -42,7 +41,7 @@ from services.hpd import (
 )
 from services.news import get_district_news, get_epstein_feed
 from services.social import get_social_config
-import auth
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -81,47 +80,6 @@ app = FastAPI(
 )
 
 
-# ── Auth Middleware ──────────────────────────────────────────────────────────
-
-PUBLIC_PATHS = {"/login", "/auth/login", "/favicon.ico", "/api/status"}
-
-
-class AuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        path = request.url.path
-
-        # Public paths — no auth needed
-        if path in PUBLIC_PATHS or path.startswith("/static/"):
-            return await call_next(request)
-
-        # Get session from cookie
-        token = request.cookies.get("session")
-        user = None
-        if token:
-            user = await auth.validate_session(token)
-
-        if not user:
-            # API requests get 401, page requests get redirected
-            if path.startswith("/api/") or path.startswith("/auth/") or path.startswith("/admin/api/"):
-                return JSONResponse({"error": "Not authenticated"}, status_code=401)
-            return RedirectResponse("/login", status_code=302)
-
-        # Admin-only paths
-        if path.startswith("/admin") and user["role"] != "admin":
-            return RedirectResponse("/", status_code=302)
-
-        # Project access check for /district2
-        if path == "/district2":
-            has_access = await auth.user_has_project_access(user["id"], user["role"], "district2")
-            if not has_access:
-                return RedirectResponse("/", status_code=302)
-
-        request.state.user = user
-        return await call_next(request)
-
-
-app.add_middleware(AuthMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://whatisms.com"],
@@ -131,135 +89,14 @@ app.add_middleware(
 
 # Serve frontend static files
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
-pages_dir = os.path.join(frontend_dir, "pages")
 app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 
 # ── Frontend Pages ──────────────────────────────────────────────────────────
 
-@app.get("/login")
-async def login_page():
-    return FileResponse(os.path.join(pages_dir, "login.html"))
-
-
-@app.get("/")
-async def portal_page():
-    return FileResponse(os.path.join(pages_dir, "portal.html"))
-
-
 @app.get("/district2")
 async def district2_page():
     return FileResponse(os.path.join(frontend_dir, "index.html"))
-
-
-@app.get("/admin")
-async def admin_page():
-    return FileResponse(os.path.join(pages_dir, "admin.html"))
-
-
-# ── Auth API ────────────────────────────────────────────────────────────────
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-    remember: bool = False
-
-
-class PasswordChangeRequest(BaseModel):
-    old_password: str
-    new_password: str
-
-
-@app.post("/auth/login")
-async def auth_login(req: LoginRequest):
-    user = await auth.authenticate_user(req.username, req.password)
-    if not user:
-        return JSONResponse({"error": "Invalid username or password"}, status_code=401)
-    token = await auth.create_session(user["id"], remember=req.remember)
-    days = 30 if req.remember else 7
-    is_prod = os.environ.get("HOST", "127.0.0.1") == "0.0.0.0"
-    response = JSONResponse({"user": user})
-    response.set_cookie(
-        "session", token,
-        httponly=True,
-        secure=is_prod,
-        max_age=days * 86400,
-        samesite="lax",
-        path="/",
-    )
-    return response
-
-
-@app.post("/auth/logout")
-async def auth_logout(request: Request):
-    token = request.cookies.get("session")
-    if token:
-        await auth.delete_session(token)
-    response = JSONResponse({"ok": True})
-    response.delete_cookie("session", path="/")
-    return response
-
-
-@app.get("/auth/me")
-async def auth_me(request: Request):
-    user = request.state.user
-    projects = await auth.get_user_projects(user["id"], user["role"])
-    return {"user": user, "projects": projects}
-
-
-@app.post("/auth/password")
-async def auth_change_password(request: Request, req: PasswordChangeRequest):
-    user = request.state.user
-    ok = await auth.change_password(user["id"], req.old_password, req.new_password)
-    if not ok:
-        return JSONResponse({"error": "Current password is incorrect"}, status_code=400)
-    return {"ok": True}
-
-
-# ── Admin API ───────────────────────────────────────────────────────────────
-
-class CreateUserRequest(BaseModel):
-    username: str
-    password: str
-    role: str = "user"
-    project_ids: list[int] = []
-
-
-class UpdateProjectsRequest(BaseModel):
-    project_ids: list[int]
-
-
-@app.get("/admin/api/users")
-async def admin_list_users():
-    return await auth.list_users()
-
-
-@app.post("/admin/api/users")
-async def admin_create_user(req: CreateUserRequest):
-    try:
-        user = await auth.create_user(req.username, req.password, req.role, req.project_ids)
-        return user
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=400)
-
-
-@app.put("/admin/api/users/{user_id}/projects")
-async def admin_update_user_projects(user_id: int, req: UpdateProjectsRequest):
-    await auth.set_user_projects(user_id, req.project_ids)
-    return {"ok": True}
-
-
-@app.delete("/admin/api/users/{user_id}")
-async def admin_delete_user(user_id: int):
-    ok = await auth.delete_user(user_id)
-    if not ok:
-        return JSONResponse({"error": "Cannot delete the last admin"}, status_code=400)
-    return {"ok": True}
-
-
-@app.get("/admin/api/projects")
-async def admin_list_projects():
-    return await auth.list_projects()
 
 
 # ── Pin Map API ──────────────────────────────────────────────────────────────
@@ -385,7 +222,6 @@ class SuggestionStatusUpdate(BaseModel):
 
 @app.get("/api/suggestions")
 async def get_suggestions(
-    request: Request,
     status: str = Query(None, pattern=r"^(open|in_progress|completed)$"),
     type: str = Query(None, pattern=r"^(suggestion|bug|improvement)$"),
 ):
@@ -399,40 +235,36 @@ async def get_suggestions(
         params.append(type)
     where = " AND ".join(conditions)
     return await query(
-        f"""SELECT s.*, u.username FROM suggestions s
-            JOIN users u ON s.submitted_by = u.id
+        f"""SELECT s.*, COALESCE(u.username, 'unknown') as username FROM suggestions s
+            LEFT JOIN users u ON s.submitted_by = u.id
             WHERE {where} ORDER BY s.created_at DESC""",
         tuple(params),
     )
 
 
 @app.post("/api/suggestions")
-async def create_suggestion(request: Request, body: SuggestionCreate):
-    user = request.state.user
+async def create_suggestion(body: SuggestionCreate):
     await execute(
         "INSERT INTO suggestions (title, description, type, submitted_by) VALUES (?, ?, ?, ?)",
-        (body.title, body.description, body.type, user["id"]),
+        (body.title, body.description, body.type, 0),
     )
     result = await query(
-        """SELECT s.*, u.username FROM suggestions s
-           JOIN users u ON s.submitted_by = u.id
+        """SELECT s.*, COALESCE(u.username, 'unknown') as username FROM suggestions s
+           LEFT JOIN users u ON s.submitted_by = u.id
            ORDER BY s.id DESC LIMIT 1"""
     )
     return result[0] if result else {"error": "Failed to create suggestion"}
 
 
 @app.put("/api/suggestions/{suggestion_id}")
-async def update_suggestion(suggestion_id: int, request: Request, body: SuggestionStatusUpdate):
-    user = request.state.user
-    if user["role"] != "admin":
-        return JSONResponse({"error": "Admin access required"}, status_code=403)
+async def update_suggestion(suggestion_id: int, body: SuggestionStatusUpdate):
     await execute(
         "UPDATE suggestions SET status = ?, admin_note = ?, updated_at = datetime('now') WHERE id = ?",
         (body.status, body.admin_note, suggestion_id),
     )
     result = await query(
-        """SELECT s.*, u.username FROM suggestions s
-           JOIN users u ON s.submitted_by = u.id
+        """SELECT s.*, COALESCE(u.username, 'unknown') as username FROM suggestions s
+           LEFT JOIN users u ON s.submitted_by = u.id
            WHERE s.id = ?""",
         (suggestion_id,),
     )
@@ -440,10 +272,7 @@ async def update_suggestion(suggestion_id: int, request: Request, body: Suggesti
 
 
 @app.delete("/api/suggestions/{suggestion_id}")
-async def delete_suggestion(suggestion_id: int, request: Request):
-    user = request.state.user
-    if user["role"] != "admin":
-        return JSONResponse({"error": "Admin access required"}, status_code=403)
+async def delete_suggestion(suggestion_id: int):
     await execute("DELETE FROM suggestions WHERE id = ?", (suggestion_id,))
     return {"ok": True}
 

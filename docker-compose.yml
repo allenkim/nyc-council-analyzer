@@ -11,7 +11,7 @@ services:
       - HOST=0.0.0.0
       - PORT=8050
       - BACKFILL_MONTHS=3
-      - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD:-}
+
     env_file:
       - path: district2-dashboard/.env
         required: false
@@ -51,6 +51,7 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./static:/var/www/static:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:

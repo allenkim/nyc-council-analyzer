@@ -1,24 +1,45 @@
 whatisms.com {
-	log {
-		output stdout
-		format json {
-			time_format iso8601
-		}
+	# ── Public: login page (no auth) ─────────────────────────────────
+	handle /login {
+		root * /var/www/static
+		rewrite * /login.html
+		file_server
 	}
 
-	handle /finance* {
+	# ── Public: NextAuth endpoints (needed for OAuth flow) ───────────
+	handle /finance/api/auth/* {
 		reverse_proxy finance:3000
 	}
 
-	handle {
-		reverse_proxy district2:8050
+	# ── Protected: finance app ───────────────────────────────────────
+	handle /finance* {
+		forward_auth finance:3000 {
+			uri /finance/api/auth/check
+		}
+		reverse_proxy finance:3000
 	}
 
-	encode gzip
+	# ── Protected: everything else (portal + district2) ──────────────
+	handle {
+		route {
+			forward_auth finance:3000 {
+				uri /finance/api/auth/check
+			}
 
-	# Cache static assets for 1 year
-	header /static/* Cache-Control "public, max-age=31536000, immutable"
+			@root path /
+			handle @root {
+				root * /var/www/static
+				rewrite * /portal.html
+				file_server
+			}
 
+			handle {
+				reverse_proxy district2:8050
+			}
+		}
+	}
+
+	# ── Security headers ─────────────────────────────────────────────
 	header {
 		X-Content-Type-Options nosniff
 		X-Frame-Options DENY
@@ -27,4 +48,15 @@ whatisms.com {
 		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://cdn.plaid.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' https://*.plaid.com; frame-src 'self' https://cdn.plaid.com https://app.snaptrade.com; font-src 'self'"
 		-Server
 	}
+
+	header /static/* Cache-Control "public, max-age=31536000, immutable"
+
+	log {
+		output stdout
+		format json {
+			time_format iso8601
+		}
+	}
+
+	encode gzip
 }
