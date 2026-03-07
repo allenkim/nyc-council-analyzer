@@ -16,7 +16,7 @@ whatisms.com {
 
 			@unauthorized status 401 403
 			handle_response @unauthorized {
-				redir /login
+				redir * /login 302
 			}
 
 			@error status 5xx
