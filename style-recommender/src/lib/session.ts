@@ -1,13 +1,32 @@
 import { cookies } from "next/headers";
-import { getToken } from "next-auth/jwt";
+import { jwtDecrypt } from "jose";
+import { hkdf } from "@panva/hkdf";
 import { prisma } from "./db";
 
 export type AuthUser = { id: string; email: string; name: string | null };
 
+const COOKIE_NAME = "__Secure-authjs.session-token";
+
 /**
- * Get the authenticated user by reading the NextAuth JWT cookie.
+ * Derive the encryption key the same way Auth.js v5 does.
+ * Algorithm: A256CBC-HS512, key derived via HKDF-SHA256.
+ */
+async function getEncryptionKey(secret: string, salt: string): Promise<Uint8Array> {
+  return new Uint8Array(
+    await hkdf(
+      "sha256",
+      secret,
+      salt,
+      `Auth.js Generated Encryption Key (${salt})`,
+      64
+    )
+  );
+}
+
+/**
+ * Get the authenticated user by reading the NextAuth v5 JWT cookie.
  *
- * The JWT is set by the finance app's NextAuth on the whatisms.com domain.
+ * The JWT is set by the finance app's Auth.js v5 on the whatisms.com domain.
  * Caddy's forward_auth ensures only authenticated requests reach us,
  * but we still read the JWT to know WHO the user is.
  *
@@ -25,41 +44,34 @@ export async function getUser(): Promise<AuthUser | null> {
   }
 
   try {
-    // Finance app uses NextAuth v5 which names cookies "authjs.*"
-    // Style app has NextAuth v4 whose getToken defaults to "next-auth.*"
-    // Explicitly specify the v5 cookie name so we can decode the JWT
-    const cookieName = "__Secure-authjs.session-token";
-
     const allCookies = Object.fromEntries(
       (await cookies()).getAll().map((c) => [c.name, c.value])
     );
 
-    const token = await getToken({
-      req: { cookies: allCookies } as Parameters<typeof getToken>[0]["req"],
-      secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: true, // Always true — site is behind HTTPS via Caddy
-      cookieName,
+    const token = allCookies[COOKIE_NAME];
+    if (!token) return null;
+
+    // Decrypt the JWE using the same key derivation as Auth.js v5
+    const encryptionKey = await getEncryptionKey(
+      process.env.NEXTAUTH_SECRET,
+      COOKIE_NAME
+    );
+
+    const { payload } = await jwtDecrypt(token, encryptionKey, {
+      clockTolerance: 15,
     });
 
-    const email = token?.email as string | undefined;
-    if (!token || !email) {
-      console.error("[session] token decode failed", {
-        hasToken: !!token,
-        email,
-        cookieNames: Object.keys(allCookies),
-        hasCookie: cookieName in allCookies,
-      });
-      return null;
-    }
+    const email = payload.email as string | undefined;
+    if (!email) return null;
 
     // Upsert: create local user record on first visit
     const user = await prisma.user.upsert({
       where: { email },
-      update: { name: (token.name as string) ?? null },
+      update: { name: (payload.name as string) ?? null },
       create: {
         email,
-        name: (token.name as string) ?? null,
-        image: (token.picture as string) ?? null,
+        name: (payload.name as string) ?? null,
+        image: (payload.picture as string) ?? null,
       },
     });
 
