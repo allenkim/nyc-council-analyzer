@@ -81,29 +81,18 @@ export function BrandList({ brands }: BrandListProps) {
   if (!brands || brands.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {brands.map((brand, i) => {
         const badge = priceRangeBadge(brand.priceRange || "");
         const product = brandImages[brand.name];
         return (
           <div
             key={i}
-            className="rounded-lg border border-zinc-800 bg-zinc-900/70 overflow-hidden transition-colors hover:border-zinc-700"
+            className="flex rounded-lg border border-zinc-800 bg-zinc-900/70 overflow-hidden transition-colors hover:border-zinc-700"
           >
-            {product?.filename && (
-              <div className="aspect-square overflow-hidden bg-neutral-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`${basePath}/api/images/fashion/images/${product.filename}`}
-                  alt={product.name || brand.name}
-                  className="w-full h-full object-contain"
-                  loading="lazy"
-                />
-              </div>
-            )}
-            <div className="p-4">
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <h4 className="font-semibold text-white">{brand.name}</h4>
+            <div className="flex-1 p-4 min-w-0">
+              <div className="mb-1.5 flex items-center gap-2">
+                <h4 className="font-semibold text-white truncate">{brand.name}</h4>
                 {brand.priceRange && (
                   <span
                     className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.className}`}
@@ -116,6 +105,17 @@ export function BrandList({ brands }: BrandListProps) {
                 {brand.reason}
               </p>
             </div>
+            {product?.filename && (
+              <div className="w-24 shrink-0 overflow-hidden bg-neutral-100 sm:w-28">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${basePath}/api/images/fashion/images/${product.filename}`}
+                  alt={product.name || brand.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            )}
           </div>
         );
       })}
