@@ -206,77 +206,6 @@ async def delete_pin_tag(tag_name: str):
     return {"ok": True}
 
 
-# ── Suggestions API ──────────────────────────────────────────────────────────
-
-
-class SuggestionCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=200)
-    description: str | None = Field(None, max_length=2000)
-    type: str = Field("suggestion", pattern=r"^(suggestion|bug|improvement)$")
-
-
-class SuggestionStatusUpdate(BaseModel):
-    status: str = Field(..., pattern=r"^(open|in_progress|completed)$")
-    admin_note: str | None = Field(None, max_length=1000)
-
-
-@app.get("/api/suggestions")
-async def get_suggestions(
-    status: str = Query(None, pattern=r"^(open|in_progress|completed)$"),
-    type: str = Query(None, pattern=r"^(suggestion|bug|improvement)$"),
-):
-    conditions = ["1=1"]
-    params = []
-    if status:
-        conditions.append("s.status = ?")
-        params.append(status)
-    if type:
-        conditions.append("s.type = ?")
-        params.append(type)
-    where = " AND ".join(conditions)
-    return await query(
-        f"""SELECT s.*, COALESCE(u.username, 'unknown') as username FROM suggestions s
-            LEFT JOIN users u ON s.submitted_by = u.id
-            WHERE {where} ORDER BY s.created_at DESC""",
-        tuple(params),
-    )
-
-
-@app.post("/api/suggestions")
-async def create_suggestion(body: SuggestionCreate):
-    await execute(
-        "INSERT INTO suggestions (title, description, type, submitted_by) VALUES (?, ?, ?, ?)",
-        (body.title, body.description, body.type, 0),
-    )
-    result = await query(
-        """SELECT s.*, COALESCE(u.username, 'unknown') as username FROM suggestions s
-           LEFT JOIN users u ON s.submitted_by = u.id
-           ORDER BY s.id DESC LIMIT 1"""
-    )
-    return result[0] if result else {"error": "Failed to create suggestion"}
-
-
-@app.put("/api/suggestions/{suggestion_id}")
-async def update_suggestion(suggestion_id: int, body: SuggestionStatusUpdate):
-    await execute(
-        "UPDATE suggestions SET status = ?, admin_note = ?, updated_at = datetime('now') WHERE id = ?",
-        (body.status, body.admin_note, suggestion_id),
-    )
-    result = await query(
-        """SELECT s.*, COALESCE(u.username, 'unknown') as username FROM suggestions s
-           LEFT JOIN users u ON s.submitted_by = u.id
-           WHERE s.id = ?""",
-        (suggestion_id,),
-    )
-    return result[0] if result else JSONResponse({"error": "Not found"}, status_code=404)
-
-
-@app.delete("/api/suggestions/{suggestion_id}")
-async def delete_suggestion(suggestion_id: int):
-    await execute("DELETE FROM suggestions WHERE id = ?", (suggestion_id,))
-    return {"ok": True}
-
-
 @app.get("/api/geocode")
 async def geocode_address(address: str = Query(...)):
     """Geocode an address using Nominatim (OpenStreetMap), scoped to NYC."""
@@ -521,8 +450,7 @@ async def api_status():
     """Dashboard health check with data counts."""
     counts = {}
     for table in ["events", "complaints_311", "calls_911", "hpd_violations",
-                   "hpd_complaints", "news_articles", "legislation", "map_pins",
-                   "suggestions"]:
+                   "hpd_complaints", "news_articles", "legislation", "map_pins"]:
         result = await query(f"SELECT COUNT(*) as cnt FROM {table}")
         counts[table] = result[0]["cnt"] if result else 0
 

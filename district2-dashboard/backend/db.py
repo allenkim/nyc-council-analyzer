@@ -185,20 +185,6 @@ CREATE TABLE IF NOT EXISTS pin_tags (
     is_custom INTEGER DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS suggestions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT,
-    type TEXT NOT NULL DEFAULT 'suggestion',
-    status TEXT NOT NULL DEFAULT 'open',
-    submitted_by INTEGER NOT NULL DEFAULT 0,
-    admin_note TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_suggestions_status ON suggestions(status);
-CREATE INDEX IF NOT EXISTS idx_suggestions_created ON suggestions(created_at);
-
 """
 
 
