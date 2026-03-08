@@ -50,6 +50,7 @@ services:
       - "3001"
     volumes:
       - style-data:/app/data
+      - ./fashion-data:/app/fashion-data:ro
     environment:
       - HOSTNAME=0.0.0.0
       - PORT=3001

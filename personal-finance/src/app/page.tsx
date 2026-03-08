@@ -6,6 +6,7 @@ import NetWorthCard from "@/components/NetWorthCard";
 import AllocationChart from "@/components/AllocationChart";
 import AccountCard from "@/components/AccountCard";
 import CashFlowForecast from "@/components/CashFlowForecast";
+import PrivacyValue from "@/components/PrivacyValue";
 import NetWorthHistorySection from "./NetWorthHistorySection";
 import {
   ASSET_CATEGORIES,
@@ -137,7 +138,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-muted">{formatPercent(cat.percent)}</span>
-                    <span className="font-semibold w-28 text-right">{formatCurrency(cat.value)}</span>
+                    <span className="font-semibold w-28 text-right"><PrivacyValue>{formatCurrency(cat.value)}</PrivacyValue></span>
                   </div>
                 </div>
                 <div className="w-full bg-card-border rounded-full h-3">
