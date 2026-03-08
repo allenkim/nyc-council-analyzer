@@ -19,6 +19,11 @@ whatisms.com {
 		reverse_proxy finance:3000
 	}
 
+	# ── Style: internal worker API (Bearer token auth, no OAuth) ────
+	handle /style/api/internal/* {
+		reverse_proxy style:3001
+	}
+
 	# ── Protected: style app ─────────────────────────────────────────
 	handle /style* {
 		forward_auth finance:3000 {
