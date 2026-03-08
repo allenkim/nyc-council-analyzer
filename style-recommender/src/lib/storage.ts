@@ -80,6 +80,9 @@ export async function readFashionImage(
   relativePath: string
 ): Promise<{ buffer: Buffer; mimeType: string }> {
   const absPath = join(FASHION_DATA_DIR, relativePath);
+  if (!absPath.startsWith(FASHION_DATA_DIR)) {
+    throw new Error("Invalid path");
+  }
   const buffer = await readFile(absPath);
   const ext = relativePath.split(".").pop()?.toLowerCase() || "";
   const mimeMap: Record<string, string> = {
@@ -99,7 +102,9 @@ export async function fashionImageExists(
   relativePath: string
 ): Promise<boolean> {
   try {
-    await stat(join(FASHION_DATA_DIR, relativePath));
+    const absPath = join(FASHION_DATA_DIR, relativePath);
+    if (!absPath.startsWith(FASHION_DATA_DIR)) return false;
+    await stat(absPath);
     return true;
   } catch {
     return false;

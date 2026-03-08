@@ -17,6 +17,7 @@ interface MoodBoardProps {
 
 export function MoodBoard({ aesthetics, maxImages = 6 }: MoodBoardProps) {
   const [images, setImages] = useState<LookItem[]>([]);
+  const aestheticKey = aesthetics.join(",");
 
   useEffect(() => {
     async function load() {
@@ -43,7 +44,7 @@ export function MoodBoard({ aesthetics, maxImages = 6 }: MoodBoardProps) {
       }
     }
     if (aesthetics.length > 0) load();
-  }, [aesthetics, maxImages]);
+  }, [aestheticKey, maxImages]);
 
   if (images.length === 0) return null;
 

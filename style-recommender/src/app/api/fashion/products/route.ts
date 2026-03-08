@@ -5,6 +5,18 @@ import { join } from "path";
 
 const FASHION_DATA_DIR = process.env.FASHION_DATA_DIR || "";
 
+let cache: { data: unknown; loadedAt: number } | null = null;
+const CACHE_TTL = 300_000; // 5 minutes
+
+async function getCachedData(filePath: string) {
+  if (!cache || Date.now() - cache.loadedAt > CACHE_TTL) {
+    const raw = await readFile(filePath, "utf-8");
+    cache = { data: JSON.parse(raw), loadedAt: Date.now() };
+  }
+  // Return a deep copy so mutations from filtering don't corrupt the cache
+  return JSON.parse(JSON.stringify(cache.data));
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getUser();
@@ -15,8 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     const catalogPath = join(FASHION_DATA_DIR, "catalog.json");
-    const raw = await readFile(catalogPath, "utf-8");
-    const catalog = JSON.parse(raw);
+    const catalog = await getCachedData(catalogPath);
 
     // Filter by brand name (case-insensitive partial match)
     const brand = request.nextUrl.searchParams.get("brand");

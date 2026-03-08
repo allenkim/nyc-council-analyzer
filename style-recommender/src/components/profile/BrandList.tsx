@@ -43,6 +43,7 @@ function priceRangeBadge(priceRange: string) {
 
 export function BrandList({ brands }: BrandListProps) {
   const [brandImages, setBrandImages] = useState<Record<string, ProductImage | null>>({});
+  const brandKey = brands.map(b => b.name).join(",");
 
   useEffect(() => {
     if (!brands || brands.length === 0) return;
@@ -75,7 +76,7 @@ export function BrandList({ brands }: BrandListProps) {
     }
 
     fetchBrandImages();
-  }, [brands]);
+  }, [brandKey]);
 
   if (!brands || brands.length === 0) return null;
 
