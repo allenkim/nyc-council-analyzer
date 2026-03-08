@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { QUIZ_SECTIONS, type QuizCategory } from "@/lib/quiz-definitions";
+import { useTaskPoll } from "@/lib/use-task-poll";
 import ProgressBar from "./ProgressBar";
 import QuizSection from "./QuizSection";
 import SelfieUpload from "./SelfieUpload";
@@ -26,9 +27,9 @@ export default function QuizFlow({ initialAnswers, hasSelfie }: QuizFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswers>(initialAnswers);
   const [saving, setSaving] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const [selfieComplete, setSelfieComplete] = useState(hasSelfie);
   const [error, setError] = useState<string | null>(null);
+  const { isWaiting: generating, isCompleted: profileReady, isFailed: profileFailed, startPolling, task: profileTask } = useTaskPoll();
 
   const isSelfieStep = currentStep === SECTION_CATEGORIES.length;
   const section = !isSelfieStep ? QUIZ_SECTIONS[currentStep] : null;
@@ -84,7 +85,6 @@ export default function QuizFlow({ initialAnswers, hasSelfie }: QuizFlowProps) {
   }
 
   async function handleGenerateProfile() {
-    setGenerating(true);
     setError(null);
     try {
       const res = await fetch(`${BASE_PATH}/api/profile`, {
@@ -94,11 +94,18 @@ export default function QuizFlow({ initialAnswers, hasSelfie }: QuizFlowProps) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to generate profile");
       }
-      router.push("/profile");
+      const data = await res.json();
+      if (data.taskId) {
+        startPolling(data.taskId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate profile");
-      setGenerating(false);
     }
+  }
+
+  // When profile generation completes, redirect to profile page
+  if (profileReady) {
+    router.push(`/profile`);
   }
 
   return (
@@ -138,9 +145,9 @@ export default function QuizFlow({ initialAnswers, hasSelfie }: QuizFlowProps) {
       )}
 
       {/* Error */}
-      {error && (
+      {(error || profileFailed) && (
         <div className="mt-4 p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-300 text-sm">
-          {error}
+          {error || profileTask?.error || "Profile generation failed. Please try again."}
         </div>
       )}
 
@@ -181,7 +188,7 @@ export default function QuizFlow({ initialAnswers, hasSelfie }: QuizFlowProps) {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Generating Profile...
+                    {profileTask?.status === "processing" ? "AI is generating your profile..." : "Waiting for AI..."}
                   </span>
                 ) : selfieComplete ? (
                   "Generate Profile"

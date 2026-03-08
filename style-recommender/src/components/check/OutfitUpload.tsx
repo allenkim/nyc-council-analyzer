@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { useTaskPoll } from "@/lib/use-task-poll";
 import FeedbackView from "./FeedbackView";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 interface OutfitCheckResult {
   id: string;
-  driveFileId: string;
+  imagePath: string;
   feedbackClaude: string | null;
   feedbackGemini: string | null;
   createdAt: string;
@@ -19,8 +20,10 @@ export default function OutfitUpload() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<OutfitCheckResult | null>(null);
+  const [outfitCheckId, setOutfitCheckId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { task, isWaiting, isCompleted, isFailed, startPolling, reset: resetTask } = useTaskPoll();
 
   const handleFile = useCallback((selectedFile: File) => {
     if (!selectedFile.type.startsWith("image/")) {
@@ -88,8 +91,12 @@ export default function OutfitUpload() {
         throw new Error(data.error || `Request failed (${res.status})`);
       }
 
-      const data: OutfitCheckResult = await res.json();
-      setResult(data);
+      const data = await res.json();
+      setOutfitCheckId(data.id);
+
+      if (data.taskId) {
+        startPolling(data.taskId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -97,18 +104,33 @@ export default function OutfitUpload() {
     }
   };
 
+  // When task completes, fetch the updated outfit check record
+  if (isCompleted && outfitCheckId && !result) {
+    fetch(`${basePath}/api/outfit-check`)
+      .then((res) => res.json())
+      .then((checks: OutfitCheckResult[]) => {
+        const updated = checks.find((c) => c.id === outfitCheckId);
+        if (updated) setResult(updated);
+      })
+      .catch(() => {});
+  }
+
   const reset = () => {
     setFile(null);
     setPreview(null);
     setResult(null);
     setError(null);
+    setOutfitCheckId(null);
+    resetTask();
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  const showWaiting = loading || isWaiting;
 
   return (
     <div className="space-y-6">
       {/* Upload zone */}
-      {!result && (
+      {!result && !showWaiting && (
         <>
           <div
             onDrop={handleDrop}
@@ -169,17 +191,7 @@ export default function OutfitUpload() {
                   : "bg-black hover:bg-gray-800 cursor-pointer"}
               `}
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Analyzing outfit...
-                </span>
-              ) : (
-                "Get Feedback"
-              )}
+              Get Feedback
             </button>
             {file && !loading && (
               <button
@@ -190,19 +202,35 @@ export default function OutfitUpload() {
               </button>
             )}
           </div>
-
-          {loading && (
-            <p className="text-sm text-gray-500 text-center">
-              Two AI models are reviewing your outfit. This usually takes 10-15 seconds.
-            </p>
-          )}
         </>
       )}
 
+      {/* Waiting for AI feedback */}
+      {showWaiting && (
+        <div className="text-center py-16">
+          {preview && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={preview}
+              alt="Outfit being analyzed"
+              className="max-h-48 mx-auto rounded-lg object-contain mb-6 opacity-75"
+            />
+          )}
+          <svg className="animate-spin w-10 h-10 mx-auto text-indigo-400 mb-3" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <p className="text-gray-400">
+            {loading ? "Uploading outfit..." : task?.status === "processing" ? "AI is reviewing your outfit..." : "Waiting for AI feedback..."}
+          </p>
+          <p className="text-gray-600 text-xs mt-1">This may take a minute</p>
+        </div>
+      )}
+
       {/* Error */}
-      {error && (
+      {(error || isFailed) && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-          {error}
+          {error || task?.error || "Outfit check failed. Please try again."}
         </div>
       )}
 

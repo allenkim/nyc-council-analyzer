@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTaskPoll } from "@/lib/use-task-poll";
 import FeedCard, { type FeedItemData } from "./FeedCard";
 import SavedItems from "./SavedItems";
 
@@ -23,15 +24,14 @@ export default function FeedView({
   const [unseenItems, setUnseenItems] = useState<FeedItemData[]>(initialUnseen);
   const [savedItems, setSavedItems] = useState<FeedItemData[]>(initialSaved);
   const [heartedItems, setHeartedItems] = useState<FeedItemData[]>(initialHearted);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isActioning, setIsActioning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isWaiting, isCompleted, isFailed, startPolling, reset: resetTask, task } = useTaskPoll();
 
   const hasNoItems = unseenItems.length === 0 && savedItems.length === 0 && heartedItems.length === 0;
-  const isFirstVisit = hasNoItems && !isGenerating;
+  const isFirstVisit = hasNoItems && !isWaiting;
 
   const generateRecommendations = useCallback(async () => {
-    setIsGenerating(true);
     setError(null);
     try {
       const res = await fetch(`${basePath}/api/feed`, { method: "POST" });
@@ -40,21 +40,28 @@ export default function FeedView({
         throw new Error(data.error || "Failed to generate recommendations");
       }
 
-      // Fetch updated feed after generation
-      const feedRes = await fetch(`${basePath}/api/feed`);
-      if (!feedRes.ok) throw new Error("Failed to fetch feed");
-      const feed = await feedRes.json();
-
-      setUnseenItems(feed.unseen || []);
-      setSavedItems(feed.saved || []);
-      setHeartedItems(feed.hearted || []);
-      setActiveTab("new");
+      const data = await res.json();
+      if (data.taskId) {
+        startPolling(data.taskId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setIsGenerating(false);
     }
-  }, []);
+  }, [startPolling]);
+
+  // When task completes, fetch updated feed
+  if (isCompleted) {
+    resetTask();
+    fetch(`${basePath}/api/feed`)
+      .then((res) => res.json())
+      .then((feed) => {
+        setUnseenItems(feed.unseen || []);
+        setSavedItems(feed.saved || []);
+        setHeartedItems(feed.hearted || []);
+        setActiveTab("new");
+      })
+      .catch(() => {});
+  }
 
   const handleAction = useCallback(
     async (itemId: string, action: "heart" | "skip" | "save") => {
@@ -82,7 +89,6 @@ export default function FeedView({
           } else if (action === "save") {
             setSavedItems((prev) => [item, ...prev]);
           }
-          // For "skip", the item is just removed from unseen
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
@@ -130,9 +136,9 @@ export default function FeedView({
       </div>
 
       {/* Error */}
-      {error && (
+      {(error || isFailed) && (
         <div className="mb-4 p-3 bg-red-900/40 border border-red-700 text-red-300 rounded-lg text-sm">
-          {error}
+          {error || task?.error || "Feed generation failed. Please try again."}
         </div>
       )}
 
@@ -153,37 +159,30 @@ export default function FeedView({
               </p>
               <button
                 onClick={generateRecommendations}
-                disabled={isGenerating}
+                disabled={isWaiting}
                 className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
               >
-                {isGenerating ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Generating...
-                  </span>
-                ) : (
-                  "Generate Your First Recommendations"
-                )}
+                Generate Your First Recommendations
               </button>
             </div>
           )}
 
-          {/* Generating state (not first visit) */}
-          {isGenerating && !isFirstVisit && (
+          {/* Waiting for AI generation */}
+          {isWaiting && (
             <div className="text-center py-16">
               <svg className="w-10 h-10 mx-auto text-indigo-400 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <p className="text-gray-400">Generating new recommendations...</p>
+              <p className="text-gray-400">
+                {task?.status === "processing" ? "AI is curating recommendations..." : "Waiting for AI to generate recommendations..."}
+              </p>
+              <p className="text-gray-600 text-xs mt-1">This may take a minute</p>
             </div>
           )}
 
           {/* Show current card */}
-          {!isGenerating && unseenItems.length > 0 && (
+          {!isWaiting && unseenItems.length > 0 && (
             <div>
               <p className="text-center text-xs text-gray-500 mb-4">
                 {unseenItems.length} item{unseenItems.length !== 1 ? "s" : ""} to review
@@ -197,7 +196,7 @@ export default function FeedView({
           )}
 
           {/* All items reviewed: offer to generate more */}
-          {!isGenerating && !isFirstVisit && unseenItems.length === 0 && (
+          {!isWaiting && !isFirstVisit && unseenItems.length === 0 && (
             <div className="text-center py-16">
               <svg className="w-12 h-12 mx-auto text-gray-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -210,7 +209,7 @@ export default function FeedView({
               </p>
               <button
                 onClick={generateRecommendations}
-                disabled={isGenerating}
+                disabled={isWaiting}
                 className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Get More Recommendations

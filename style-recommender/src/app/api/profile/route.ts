@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/session";
-import { analyzeWithClaude } from "@/lib/claude";
-import { analyzeWithGemini } from "@/lib/gemini";
 import { STYLE_PROFILE_PROMPT } from "@/lib/prompts";
 
 // GET — fetch user's style profile
@@ -23,7 +21,7 @@ export async function GET() {
   }
 }
 
-// POST — generate style profile from quiz + selfie data
+// POST — queue style profile generation from quiz + selfie data
 export async function POST() {
   try {
     const user = await getUser();
@@ -57,70 +55,34 @@ export async function POST() {
       .replace("{quizData}", JSON.stringify(quizData, null, 2))
       .replace("{selfieAnalysis}", JSON.stringify(selfieAnalysis, null, 2));
 
-    // Run Claude (Opus) and Gemini in parallel
-    const [claudeResult, geminiResult] = await Promise.allSettled([
-      analyzeWithClaude(prompt, { model: "claude-opus-4-6" }),
-      analyzeWithGemini(prompt),
-    ]);
-
-    const claudeProfile = claudeResult.status === "fulfilled" ? claudeResult.value : null;
-    const geminiProfile = geminiResult.status === "fulfilled" ? geminiResult.value : null;
-
-    // Parse JSON from responses (handle markdown code blocks)
-    function parseJsonResponse(text: string | null): Record<string, unknown> | null {
-      if (!text) return null;
-      const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-      const jsonStr = jsonMatch ? jsonMatch[1] : text;
-      try {
-        return JSON.parse(jsonStr.trim());
-      } catch {
-        return null;
-      }
-    }
-
-    const claudeParsed = parseJsonResponse(claudeProfile);
-    const geminiParsed = parseJsonResponse(geminiProfile);
-
-    // Extract key fields from whichever model succeeded
-    const colorSeason = selfieAnalysis?.claude
-      ? (parseJsonResponse(selfieAnalysis.claude) as Record<string, unknown> | null)?.colorSeason as string | null ?? null
-      : null;
-
-    const kibbeType = selfieAnalysis?.claude
-      ? (parseJsonResponse(selfieAnalysis.claude) as Record<string, unknown> | null)?.kibbeType as string | null ?? null
-      : null;
-
-    const styleArchetype =
-      (claudeParsed?.styleArchetype as string | undefined) ||
-      (geminiParsed?.styleArchetype as string | undefined) ||
-      null;
-
-    // Find existing profile for upsert
-    const existing = await prisma.styleProfile.findFirst({
+    // Find or create a profile record to update
+    let profile = await prisma.styleProfile.findFirst({
       where: { userId: user.id },
     });
 
-    const profilePayload = {
-      profileDataClaude: claudeProfile,
-      profileDataGemini: geminiProfile,
-      mergedProfile: JSON.stringify({ claude: claudeParsed, gemini: geminiParsed }),
-      colorSeason,
-      kibbeType,
-      styleArchetype,
-    };
+    if (!profile) {
+      profile = await prisma.styleProfile.create({
+        data: { userId: user.id },
+      });
+    }
 
-    const profile = await prisma.styleProfile.upsert({
-      where: { id: existing?.id || "" },
-      update: profilePayload,
-      create: {
+    // Queue AI task
+    const task = await prisma.styleTask.create({
+      data: {
         userId: user.id,
-        ...profilePayload,
+        type: "profile_generation",
+        targetId: profile.id,
+        payload: JSON.stringify({ prompt }),
       },
     });
 
-    return NextResponse.json(profile);
+    return NextResponse.json({
+      taskId: task.id,
+      taskStatus: task.status,
+      profileId: profile.id,
+    });
   } catch (error) {
-    console.error("Error generating profile:", error);
-    return NextResponse.json({ error: "Failed to generate profile" }, { status: 500 });
+    console.error("Error queuing profile generation:", error);
+    return NextResponse.json({ error: "Failed to queue profile generation" }, { status: 500 });
   }
 }

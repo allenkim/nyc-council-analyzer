@@ -10,7 +10,7 @@ export interface FeedItemData {
   category: string;
   priceRange: string | null;
   sourceUrl: string | null;
-  driveFileId: string | null;
+  imagePath: string | null;
   aiRationale: string | null;
   batchId: string | null;
   createdAt: string;
@@ -25,8 +25,9 @@ interface FeedCardProps {
 export default function FeedCard({ item, onAction, isActioning }: FeedCardProps) {
   const [rationaleExpanded, setRationaleExpanded] = useState(false);
 
-  const imageUrl = item.driveFileId
-    ? `https://drive.google.com/uc?id=${item.driveFileId}`
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  const imageUrl = item.imagePath
+    ? `${basePath}/api/images/${item.imagePath}`
     : null;
 
   return (

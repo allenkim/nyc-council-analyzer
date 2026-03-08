@@ -23,7 +23,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/src/generated ./src/generated
 COPY --from=builder /app/package.json ./package.json
 
-RUN mkdir -p /app/data
+# Stage quiz assets into the image for seeding into the volume on first run
+COPY --from=builder /app/data/images/quiz-assets /app/seed/quiz-assets
+RUN mkdir -p /app/data/images
 
 RUN useradd --create-home --shell /bin/false appuser \
     && chown -R appuser:appuser /app
@@ -34,4 +36,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 USER appuser
 
 EXPOSE 3001
-CMD ["sh", "-c", "npx prisma migrate deploy && PORT=3001 node server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && cp -rn /app/seed/quiz-assets /app/data/images/ 2>/dev/null; PORT=3001 node server.js"]

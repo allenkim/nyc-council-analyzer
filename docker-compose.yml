@@ -54,6 +54,7 @@ services:
       - HOSTNAME=0.0.0.0
       - PORT=3001
       - DATABASE_URL=file:/app/data/style.db
+      - DATA_DIR=/app/data
     env_file:
       - path: style-recommender/.env
         required: false

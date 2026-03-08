@@ -21,6 +21,7 @@ model User {
   feedItems        FeedItem[]
   feedInteractions FeedInteraction[]
   outfitChecks     OutfitCheck[]
+  styleTasks       StyleTask[]
 }
 
 model QuizResponse {
@@ -40,7 +41,7 @@ model SelfieUpload {
   id                   String   @id @default(cuid())
   userId               String
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  driveFileId          String
+  imagePath            String   // local path relative to data dir, e.g. "selfies/abc.jpg"
   originalFilename     String?
   analysisResultClaude String?  // JSON: color season, face shape, Kibbe type
   analysisResultGemini String?  // JSON: same structure
@@ -75,7 +76,7 @@ model FeedItem {
   category     String   // tops, bottoms, shoes, outerwear, accessories, etc.
   priceRange   String?
   sourceUrl    String?  // original external link (metadata)
-  driveFileId  String?  // Google Drive image
+  imagePath    String?  // local path relative to data dir
   aiRationale  String?  // why this was suggested
   batchId      String?  // which generation batch
   createdAt    DateTime @default(now())
@@ -104,10 +105,27 @@ model OutfitCheck {
   id              String   @id @default(cuid())
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  driveFileId     String   // uploaded outfit photo
+  imagePath       String   // local path relative to data dir
   feedbackClaude  String?  // JSON: rating, feedback, suggestions
   feedbackGemini  String?  // JSON: same structure
   createdAt       DateTime @default(now())
 
+  @@index([userId])
+}
+
+model StyleTask {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // selfie_analysis, profile_generation, feed_generation, outfit_check
+  status    String   @default("pending") // pending, processing, completed, failed
+  payload   String   // JSON: all data the worker needs
+  result    String?  // JSON: AI response(s)
+  error     String?  // error message if failed
+  targetId  String?  // ID of the record this task updates (e.g. SelfieUpload.id)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
   @@index([userId])
 }

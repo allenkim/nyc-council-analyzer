@@ -1,0 +1,23 @@
+{
+  "preferredFit_slim": "quiz-assets/preferredFit_slim.jpg",
+  "preferredFit_regular": "quiz-assets/preferredFit_regular.jpg",
+  "preferredFit_relaxed": "quiz-assets/preferredFit_relaxed.jpg",
+  "patterns_solid": "quiz-assets/patterns_solid.jpg",
+  "patterns_stripes": "quiz-assets/patterns_stripes.jpg",
+  "patterns_plaid": "quiz-assets/patterns_plaid.jpg",
+  "patterns_floral": "quiz-assets/patterns_floral.jpg",
+  "patterns_graphic": "quiz-assets/patterns_graphic.jpg",
+  "patterns_geometric": "quiz-assets/patterns_geometric.jpg",
+  "styleVibes_minimalist": "quiz-assets/styleVibes_minimalist.jpg",
+  "styleVibes_streetwear": "quiz-assets/styleVibes_streetwear.jpg",
+  "styleVibes_classic": "quiz-assets/styleVibes_classic.jpg",
+  "styleVibes_rugged": "quiz-assets/styleVibes_rugged.jpg",
+  "styleVibes_athleisure": "quiz-assets/styleVibes_athleisure.jpg",
+  "styleVibes_smart-casual": "quiz-assets/styleVibes_smart-casual.jpg",
+  "styleVibes_avant-garde": "quiz-assets/styleVibes_avant-garde.jpg",
+  "styleVibes_bohemian": "quiz-assets/styleVibes_bohemian.jpg",
+  "styleVibes_scandinavian": "quiz-assets/styleVibes_scandinavian.jpg",
+  "styleVibes_techwear": "quiz-assets/styleVibes_techwear.jpg",
+  "styleVibes_ivy": "quiz-assets/styleVibes_ivy.jpg",
+  "styleVibes_coastal": "quiz-assets/styleVibes_coastal.jpg"
+}

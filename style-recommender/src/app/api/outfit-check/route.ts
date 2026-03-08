@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/session";
-import { uploadToDrive } from "@/lib/drive";
-import { analyzeWithClaude } from "@/lib/claude";
-import { analyzeWithGemini } from "@/lib/gemini";
+import { saveImage } from "@/lib/storage";
 import { OUTFIT_CHECK_PROMPT } from "@/lib/prompts";
 
-// POST — upload outfit photo and get dual-model feedback
+// POST — upload outfit photo, save locally, queue dual-model feedback
 export async function POST(request: NextRequest) {
   try {
     const user = await getUser();
@@ -26,16 +24,11 @@ export async function POST(request: NextRequest) {
     });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = buffer.toString("base64");
-    const mimeType = file.type || "image/jpeg";
+    const ext = file.name.split(".").pop() || "jpg";
+    const filename = `outfit-${user.id}-${Date.now()}.${ext}`;
 
-    // Upload to Drive
-    const driveFileId = await uploadToDrive(
-      buffer,
-      `outfit-${user.id}-${Date.now()}.${file.name.split(".").pop()}`,
-      mimeType,
-      "Outfit Checks"
-    );
+    // Save image locally
+    const imagePath = await saveImage(buffer, "outfits", filename);
 
     // Build prompt with profile context
     const prompt = OUTFIT_CHECK_PROMPT.replace(
@@ -43,25 +36,35 @@ export async function POST(request: NextRequest) {
       profile?.mergedProfile || "No style profile available yet."
     );
 
-    // Run both models in parallel
-    const [claudeResult, geminiResult] = await Promise.allSettled([
-      analyzeWithClaude(prompt, { imageBase64: base64, mediaType: mimeType }),
-      analyzeWithGemini(prompt, { imageBase64: base64, mimeType }),
-    ]);
-
+    // Create outfit check record (no feedback yet)
     const outfitCheck = await prisma.outfitCheck.create({
       data: {
         userId: user.id,
-        driveFileId,
-        feedbackClaude: claudeResult.status === "fulfilled" ? claudeResult.value : null,
-        feedbackGemini: geminiResult.status === "fulfilled" ? geminiResult.value : null,
+        imagePath,
       },
     });
 
-    return NextResponse.json(outfitCheck);
+    // Queue AI task
+    const task = await prisma.styleTask.create({
+      data: {
+        userId: user.id,
+        type: "outfit_check",
+        targetId: outfitCheck.id,
+        payload: JSON.stringify({
+          prompt,
+          imagePath,
+        }),
+      },
+    });
+
+    return NextResponse.json({
+      ...outfitCheck,
+      taskId: task.id,
+      taskStatus: task.status,
+    });
   } catch (error) {
-    console.error("Error checking outfit:", error);
-    return NextResponse.json({ error: "Failed to check outfit" }, { status: 500 });
+    console.error("Error processing outfit check:", error);
+    return NextResponse.json({ error: "Failed to process outfit check" }, { status: 500 });
   }
 }
 

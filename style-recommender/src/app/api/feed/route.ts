@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/session";
-import { analyzeWithClaude } from "@/lib/claude";
 import { FEED_GENERATION_PROMPT } from "@/lib/prompts";
 
 // GET — fetch user's feed items (unseen first, then saved)
@@ -45,7 +44,7 @@ export async function GET() {
   }
 }
 
-// POST — generate a new batch of feed items
+// POST — queue generation of a new batch of feed items
 export async function POST() {
   try {
     const user = await getUser();
@@ -78,37 +77,21 @@ export async function POST() {
       .replace("{hearts}", JSON.stringify(recentHearts.map((i) => `${i.brand} ${i.itemName}`)))
       .replace("{skips}", JSON.stringify(recentSkips.map((i) => `${i.brand} ${i.itemName}`)));
 
-    const response = await analyzeWithClaude(prompt, { model: "claude-sonnet-4-6" });
-
-    // Parse items from response
-    const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-    const jsonStr = jsonMatch ? jsonMatch[1] : response;
-    let items: Array<Record<string, string>>;
-    try {
-      items = JSON.parse(jsonStr.trim());
-    } catch {
-      return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
-    }
-
-    const batchId = `batch-${Date.now()}`;
-
-    // Create feed items (images will be fetched separately)
-    const created = await prisma.feedItem.createMany({
-      data: items.map((item) => ({
+    // Queue AI task
+    const task = await prisma.styleTask.create({
+      data: {
         userId: user.id,
-        brand: item.brand,
-        itemName: item.itemName,
-        description: item.description,
-        category: item.category,
-        priceRange: item.priceRange,
-        aiRationale: item.rationale,
-        batchId,
-      })),
+        type: "feed_generation",
+        payload: JSON.stringify({ prompt }),
+      },
     });
 
-    return NextResponse.json({ generated: created.count, batchId });
+    return NextResponse.json({
+      taskId: task.id,
+      taskStatus: task.status,
+    });
   } catch (error) {
-    console.error("Error generating feed:", error);
-    return NextResponse.json({ error: "Failed to generate feed" }, { status: 500 });
+    console.error("Error queuing feed generation:", error);
+    return NextResponse.json({ error: "Failed to queue feed generation" }, { status: 500 });
   }
 }

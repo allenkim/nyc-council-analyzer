@@ -444,7 +444,7 @@ export function ProfileView({
         </button>
 
         <button
-          onClick={() => router.push(`${basePath}/quiz`)}
+          onClick={() => router.push(`/quiz`)}
           className="w-full rounded-xl border border-zinc-700 bg-transparent px-6 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:border-zinc-500 hover:text-white sm:w-auto"
         >
           Retake Quiz

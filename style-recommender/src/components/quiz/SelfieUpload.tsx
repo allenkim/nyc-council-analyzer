@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTaskPoll } from "@/lib/use-task-poll";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -31,7 +32,9 @@ export default function SelfieUpload({ existingAnalysis, onAnalysisComplete }: S
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<SelfieAnalysis | null>(existingAnalysis || null);
+  const [selfieId, setSelfieId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { task, isWaiting, isCompleted, isFailed, startPolling } = useTaskPoll();
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -67,9 +70,13 @@ export default function SelfieUpload({ existingAnalysis, onAnalysisComplete }: S
         throw new Error(data.error || "Upload failed");
       }
 
-      const result: SelfieAnalysis = await res.json();
-      setAnalysis(result);
-      onAnalysisComplete(result);
+      const result = await res.json();
+      setSelfieId(result.id);
+
+      if (result.taskId) {
+        // Start polling the task
+        startPolling(result.taskId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -77,9 +84,25 @@ export default function SelfieUpload({ existingAnalysis, onAnalysisComplete }: S
     }
   }
 
+  // When task completes, fetch the updated selfie record
+  if (isCompleted && selfieId && !analysis) {
+    fetch(`${BASE_PATH}/api/quiz/selfie`)
+      .then((res) => res.json())
+      .then((selfies: SelfieAnalysis[]) => {
+        const updated = selfies.find((s) => s.id === selfieId);
+        if (updated) {
+          setAnalysis(updated);
+          onAnalysisComplete(updated);
+        }
+      })
+      .catch(() => {});
+  }
+
   const claudeParsed = analysis ? parseAnalysis(analysis.analysisResultClaude) : null;
   const geminiParsed = analysis ? parseAnalysis(analysis.analysisResultGemini) : null;
   const parsed = claudeParsed || geminiParsed;
+
+  const showWaiting = uploading || isWaiting;
 
   return (
     <div className="space-y-6">
@@ -137,31 +160,35 @@ export default function SelfieUpload({ existingAnalysis, onAnalysisComplete }: S
       </div>
 
       {/* Upload button */}
-      {preview && !analysis && (
+      {preview && !analysis && !showWaiting && (
         <button
           type="button"
           onClick={handleUpload}
           disabled={uploading}
           className="w-full py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-indigo-600 hover:bg-indigo-700 text-white"
         >
-          {uploading ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Analyzing with AI...
-            </span>
-          ) : (
-            "Upload & Analyze"
-          )}
+          Upload & Analyze
         </button>
       )}
 
+      {/* Waiting for AI analysis */}
+      {showWaiting && (
+        <div className="text-center py-6">
+          <svg className="animate-spin w-8 h-8 mx-auto text-indigo-400 mb-3" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <p className="text-gray-400 text-sm">
+            {uploading ? "Uploading photo..." : task?.status === "processing" ? "AI is analyzing your photo..." : "Waiting for AI analysis..."}
+          </p>
+          <p className="text-gray-600 text-xs mt-1">This may take a minute</p>
+        </div>
+      )}
+
       {/* Error */}
-      {error && (
+      {(error || isFailed) && (
         <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-300 text-sm">
-          {error}
+          {error || task?.error || "Analysis failed. Please try again."}
         </div>
       )}
 

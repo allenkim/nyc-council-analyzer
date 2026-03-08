@@ -14,6 +14,16 @@ export type AuthUser = { id: string; email: string; name: string | null };
  * On first visit, creates a local User record matching the email.
  */
 export async function getUser(): Promise<AuthUser | null> {
+  // Dev bypass: auto-create/return a test user when no NEXTAUTH_SECRET is set
+  if (!process.env.NEXTAUTH_SECRET) {
+    const user = await prisma.user.upsert({
+      where: { email: "dev@test.com" },
+      update: {},
+      create: { email: "dev@test.com", name: "Dev User", image: null },
+    });
+    return { id: user.id, email: user.email, name: user.name };
+  }
+
   try {
     const token = await getToken({
       req: {

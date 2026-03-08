@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/session";
-import { uploadToDrive } from "@/lib/drive";
-import { analyzeWithClaude } from "@/lib/claude";
-import { analyzeWithGemini } from "@/lib/gemini";
+import { saveImage } from "@/lib/storage";
 import { SELFIE_ANALYSIS_PROMPT } from "@/lib/prompts";
 
-// POST — upload selfie and run dual-model analysis
+// POST — upload selfie, save locally, queue AI analysis
 export async function POST(request: NextRequest) {
   try {
     const user = await getUser();
@@ -20,45 +18,39 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = buffer.toString("base64");
-    const mimeType = file.type || "image/jpeg";
+    const ext = file.name.split(".").pop() || "jpg";
+    const filename = `selfie-${user.id}-${Date.now()}.${ext}`;
 
-    // Upload to Google Drive
-    const driveFileId = await uploadToDrive(
-      buffer,
-      `selfie-${user.id}-${Date.now()}.${file.name.split(".").pop()}`,
-      mimeType,
-      "Selfies"
-    );
+    // Save image locally
+    const imagePath = await saveImage(buffer, "selfies", filename);
 
-    // Run Claude and Gemini analysis in parallel
-    const [claudeResult, geminiResult] = await Promise.allSettled([
-      analyzeWithClaude(SELFIE_ANALYSIS_PROMPT, {
-        imageBase64: base64,
-        mediaType: mimeType,
-        model: "claude-sonnet-4-6",
-      }),
-      analyzeWithGemini(SELFIE_ANALYSIS_PROMPT, {
-        imageBase64: base64,
-        mimeType,
-      }),
-    ]);
-
-    const claudeAnalysis = claudeResult.status === "fulfilled" ? claudeResult.value : null;
-    const geminiAnalysis = geminiResult.status === "fulfilled" ? geminiResult.value : null;
-
-    // Save to database
+    // Create selfie record (no analysis yet)
     const selfieUpload = await prisma.selfieUpload.create({
       data: {
         userId: user.id,
-        driveFileId,
+        imagePath,
         originalFilename: file.name,
-        analysisResultClaude: claudeAnalysis,
-        analysisResultGemini: geminiAnalysis,
       },
     });
 
-    return NextResponse.json(selfieUpload);
+    // Queue AI analysis task
+    const task = await prisma.styleTask.create({
+      data: {
+        userId: user.id,
+        type: "selfie_analysis",
+        targetId: selfieUpload.id,
+        payload: JSON.stringify({
+          prompt: SELFIE_ANALYSIS_PROMPT,
+          imagePath,
+        }),
+      },
+    });
+
+    return NextResponse.json({
+      ...selfieUpload,
+      taskId: task.id,
+      taskStatus: task.status,
+    });
   } catch (error) {
     console.error("Error processing selfie:", error);
     return NextResponse.json({ error: "Failed to process selfie" }, { status: 500 });

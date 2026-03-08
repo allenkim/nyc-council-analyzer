@@ -22,8 +22,9 @@ export default function SavedItems({ items, emptyMessage = "No items yet." }: Sa
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((item) => {
-        const imageUrl = item.driveFileId
-          ? `https://drive.google.com/uc?id=${item.driveFileId}`
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+        const imageUrl = item.imagePath
+          ? `${basePath}/api/images/${item.imagePath}`
           : null;
 
         return (

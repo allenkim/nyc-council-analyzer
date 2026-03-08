@@ -7,37 +7,15 @@ interface VisualGridOption {
 }
 
 interface VisualGridProps {
+  questionId: string;
   options: VisualGridOption[];
   selected: string[];
   onChange: (selected: string[]) => void;
 }
 
-/**
- * Deterministic color from a string value for placeholder visuals.
- */
-function placeholderColor(value: string): string {
-  const colors = [
-    "from-indigo-600 to-purple-700",
-    "from-emerald-600 to-teal-700",
-    "from-amber-600 to-orange-700",
-    "from-rose-600 to-pink-700",
-    "from-cyan-600 to-blue-700",
-    "from-violet-600 to-fuchsia-700",
-    "from-lime-600 to-green-700",
-    "from-red-600 to-rose-700",
-    "from-sky-600 to-indigo-700",
-    "from-teal-600 to-cyan-700",
-    "from-fuchsia-600 to-purple-700",
-    "from-orange-600 to-amber-700",
-  ];
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) {
-    hash = value.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-}
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
-export default function VisualGrid({ options, selected, onChange }: VisualGridProps) {
+export default function VisualGrid({ questionId, options, selected, onChange }: VisualGridProps) {
   function toggle(value: string) {
     if (selected.includes(value)) {
       onChange(selected.filter((v) => v !== value));
@@ -50,6 +28,9 @@ export default function VisualGrid({ options, selected, onChange }: VisualGridPr
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
       {options.map((option) => {
         const isSelected = selected.includes(option.value);
+        const imageKey = `${questionId}_${option.value}`;
+        const imageSrc = `${basePath}/api/images/quiz-assets/${imageKey}.jpg`;
+
         return (
           <button
             key={option.value}
@@ -61,13 +42,15 @@ export default function VisualGrid({ options, selected, onChange }: VisualGridPr
                 : "ring-1 ring-gray-700 hover:ring-gray-500"
             }`}
           >
-            {/* Placeholder image area */}
-            <div
-              className={`w-full h-[200px] sm:h-[250px] bg-gradient-to-br ${placeholderColor(option.value)} flex items-center justify-center`}
-            >
-              <span className="text-white/70 text-sm text-center px-3 font-light leading-snug">
-                {option.imageQuery || option.label}
-              </span>
+            {/* Image */}
+            <div className="w-full h-[200px] sm:h-[250px] overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageSrc}
+                alt={option.label}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </div>
 
             {/* Label bar */}

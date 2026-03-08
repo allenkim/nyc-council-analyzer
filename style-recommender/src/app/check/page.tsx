@@ -49,7 +49,7 @@ export default async function OutfitCheckPage() {
                   <summary className="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-50 transition-colors">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`https://drive.google.com/uc?id=${check.driveFileId}`}
+                      src={`/style/api/images/${check.imagePath}`}
                       alt="Outfit"
                       className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
                     />

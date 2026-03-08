@@ -90,6 +90,7 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
 
           {q.type === "visual-grid" && q.options && (
             <VisualGrid
+              questionId={q.id}
               options={q.options}
               selected={(answers[q.id] as string[] | undefined) || []}
               onChange={(selected) => onChange(q.id, selected)}
