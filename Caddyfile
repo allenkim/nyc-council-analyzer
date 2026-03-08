@@ -46,6 +46,13 @@ whatisms.com {
 				file_server
 			}
 
+			@admin path /admin
+			handle @admin {
+				root * /var/www/static
+				rewrite * /admin.html
+				file_server
+			}
+
 			handle {
 				reverse_proxy district2:8050
 			}
