@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { QUIZ_SECTIONS, type QuizCategory } from "@/lib/quiz-definitions";
 import { useTaskPoll } from "@/lib/use-task-poll";
@@ -22,9 +22,21 @@ interface QuizFlowProps {
   initialSelfieCount: number;
 }
 
+/** Find the first quiz section without answers, or the selfie step if all are filled */
+function findInitialStep(answers: QuizAnswers): number {
+  for (let i = 0; i < SECTION_CATEGORIES.length; i++) {
+    const cat = SECTION_CATEGORIES[i];
+    if (!answers[cat] || Object.keys(answers[cat]).length === 0) return i;
+  }
+  // All quiz sections have answers — go to selfie step
+  return SECTION_CATEGORIES.length;
+}
+
 export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlowProps) {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() =>
+    findInitialStep(initialAnswers)
+  );
   const [answers, setAnswers] = useState<QuizAnswers>(initialAnswers);
   const [saving, setSaving] = useState(false);
   const [selfieCount, setSelfieCount] = useState(initialSelfieCount);
@@ -36,6 +48,22 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
     setSelfieCount(count);
     setAnalyzedCount(analyzed);
   }, []);
+
+  // Track which steps have answers (for progress bar)
+  const completedSteps = useMemo(() => {
+    const set = new Set<number>();
+    for (let i = 0; i < SECTION_CATEGORIES.length; i++) {
+      const cat = SECTION_CATEGORIES[i];
+      if (answers[cat] && Object.keys(answers[cat]).length > 0) {
+        set.add(i);
+      }
+    }
+    // Mark selfie step as completed if there are selfies
+    if (selfieCount > 0) {
+      set.add(SECTION_CATEGORIES.length);
+    }
+    return set;
+  }, [answers, selfieCount]);
 
   const isSelfieStep = currentStep === SECTION_CATEGORIES.length;
   const section = !isSelfieStep ? QUIZ_SECTIONS[currentStep] : null;
@@ -90,6 +118,15 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
     setCurrentStep((s) => Math.max(s - 1, 0));
   }
 
+  async function handleStepClick(step: number) {
+    if (step === currentStep) return;
+    // Save current section before jumping
+    if (!isSelfieStep && category) {
+      await saveSection(category);
+    }
+    setCurrentStep(step);
+  }
+
   async function handleGenerateProfile() {
     setError(null);
     try {
@@ -116,7 +153,11 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <ProgressBar currentStep={currentStep} />
+      <ProgressBar
+        currentStep={currentStep}
+        completedSteps={completedSteps}
+        onStepClick={handleStepClick}
+      />
 
       {/* Section header */}
       {section && (
@@ -130,7 +171,7 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-100">Photo Analysis</h2>
           <p className="text-gray-400 mt-1">
-            Optional: upload a selfie for AI-powered color and body analysis.
+            Optional: upload photos for AI-powered color and body analysis.
           </p>
         </div>
       )}
