@@ -74,6 +74,8 @@ export function ProfileView({
 }: ProfileViewProps) {
   const router = useRouter();
   const [downloading, setDownloading] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Use Claude's analysis as primary, fall back to Gemini
   const primary: ProfileData = profileData.claude || profileData.gemini || {};
@@ -427,12 +429,41 @@ export function ProfileView({
           )}
         </button>
 
-        <button
-          onClick={() => router.push(`/quiz`)}
-          className="w-full rounded-xl border border-zinc-700 bg-transparent px-6 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:border-zinc-500 hover:text-white sm:w-auto"
-        >
-          Retake Quiz
-        </button>
+        {!showResetConfirm ? (
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="w-full rounded-xl border border-zinc-700 bg-transparent px-6 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:border-zinc-500 hover:text-white sm:w-auto"
+          >
+            Start Over
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-zinc-400">Reset everything?</span>
+            <button
+              onClick={async () => {
+                setResetting(true);
+                try {
+                  await fetch(`${basePath}/api/quiz/reset`, { method: "POST" });
+                  router.push("/quiz");
+                  router.refresh();
+                } catch {
+                  setResetting(false);
+                  setShowResetConfirm(false);
+                }
+              }}
+              disabled={resetting}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+            >
+              {resetting ? "Resetting..." : "Yes, reset"}
+            </button>
+            <button
+              onClick={() => setShowResetConfirm(false)}
+              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition-colors hover:border-zinc-500"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

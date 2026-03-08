@@ -27,8 +27,8 @@ export default function ProgressBar({ currentStep, completedSteps, onStepClick }
                   i < currentStep || isCompleted
                     ? "bg-indigo-500 text-white cursor-pointer hover:bg-indigo-400"
                     : i === currentStep
-                      ? "bg-indigo-600 text-white ring-2 ring-indigo-400 ring-offset-2 ring-offset-gray-900"
-                      : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                      ? "bg-indigo-600 text-white ring-2 ring-indigo-400 ring-offset-2 ring-offset-zinc-900"
+                      : "bg-zinc-700 text-zinc-400 cursor-not-allowed"
                 }`}
               >
                 {isCompleted && i !== currentStep ? (
@@ -44,8 +44,8 @@ export default function ProgressBar({ currentStep, completedSteps, onStepClick }
                   i === currentStep
                     ? "text-indigo-400 font-medium"
                     : isClickable
-                      ? "text-gray-400 cursor-pointer"
-                      : "text-gray-500"
+                      ? "text-zinc-400 cursor-pointer"
+                      : "text-zinc-500"
                 }`}
               >
                 {label}
@@ -56,7 +56,7 @@ export default function ProgressBar({ currentStep, completedSteps, onStepClick }
       </div>
 
       {/* Progress bar track */}
-      <div className="relative h-1 bg-gray-700 rounded-full mt-2">
+      <div className="relative h-1 bg-zinc-700 rounded-full mt-2">
         <div
           className="absolute h-1 bg-indigo-500 rounded-full transition-all duration-300"
           style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}

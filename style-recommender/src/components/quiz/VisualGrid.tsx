@@ -38,8 +38,8 @@ export default function VisualGrid({ questionId, options, selected, onChange }: 
             onClick={() => toggle(option.value)}
             className={`group relative rounded-xl overflow-hidden transition-all duration-200 focus:outline-none ${
               isSelected
-                ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-gray-900 scale-[1.02]"
-                : "ring-1 ring-gray-700 hover:ring-gray-500"
+                ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-zinc-900 scale-[1.02]"
+                : "ring-1 ring-zinc-700 hover:ring-zinc-500"
             }`}
           >
             {/* Image */}
@@ -58,7 +58,7 @@ export default function VisualGrid({ questionId, options, selected, onChange }: 
               className={`px-3 py-2.5 text-sm font-medium text-center transition-colors ${
                 isSelected
                   ? "bg-indigo-600 text-white"
-                  : "bg-gray-800 text-gray-300 group-hover:bg-gray-700"
+                  : "bg-zinc-800 text-zinc-300 group-hover:bg-zinc-700"
               }`}
             >
               {option.label}

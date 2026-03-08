@@ -15,7 +15,7 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
     <div className="space-y-8">
       {questions.map((q) => (
         <div key={q.id}>
-          <label className="block text-lg font-medium text-gray-100 mb-3">
+          <label className="block text-lg font-medium text-zinc-100 mb-3">
             {q.question}
           </label>
 
@@ -23,7 +23,7 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
             <select
               value={(answers[q.id] as string) || ""}
               onChange={(e) => onChange(q.id, e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="" disabled>Select...</option>
               {q.options.map((opt) => (
@@ -42,7 +42,7 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
                       isChecked
                         ? "bg-indigo-600/20 border border-indigo-500"
-                        : "bg-gray-800 border border-gray-700 hover:border-gray-500"
+                        : "bg-zinc-800 border border-zinc-700 hover:border-zinc-500"
                     }`}
                   >
                     <input
@@ -51,9 +51,9 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
                       value={opt.value}
                       checked={isChecked}
                       onChange={() => onChange(q.id, opt.value)}
-                      className="w-4 h-4 text-indigo-500 bg-gray-700 border-gray-600 focus:ring-indigo-500 focus:ring-offset-gray-900"
+                      className="w-4 h-4 text-indigo-500 bg-zinc-700 border-zinc-600 focus:ring-indigo-500 focus:ring-offset-zinc-900"
                     />
-                    <span className="text-gray-200">{opt.label}</span>
+                    <span className="text-zinc-200">{opt.label}</span>
                   </label>
                 );
               })}
@@ -71,7 +71,7 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
                       isChecked
                         ? "bg-indigo-600/20 border border-indigo-500"
-                        : "bg-gray-800 border border-gray-700 hover:border-gray-500"
+                        : "bg-zinc-800 border border-zinc-700 hover:border-zinc-500"
                     }`}
                   >
                     <input
@@ -83,9 +83,9 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
                           : [...selectedArr, opt.value];
                         onChange(q.id, next);
                       }}
-                      className="w-4 h-4 text-indigo-500 bg-gray-700 border-gray-600 rounded focus:ring-indigo-500 focus:ring-offset-gray-900"
+                      className="w-4 h-4 text-indigo-500 bg-zinc-700 border-zinc-600 rounded focus:ring-indigo-500 focus:ring-offset-zinc-900"
                     />
-                    <span className="text-gray-200">{opt.label}</span>
+                    <span className="text-zinc-200">{opt.label}</span>
                   </label>
                 );
               })}
@@ -98,7 +98,7 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
               placeholder={q.placeholder}
               value={(answers[q.id] as string) || ""}
               onChange={(e) => onChange(q.id, e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           )}
 

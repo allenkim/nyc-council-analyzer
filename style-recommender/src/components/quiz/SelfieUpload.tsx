@@ -140,13 +140,13 @@ export default function SelfieUpload({ onSelfieCountChange }: SelfieUploadProps)
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-100 mb-2">
+        <h3 className="text-lg font-medium text-zinc-100 mb-2">
           Upload Photos{" "}
-          <span className="text-sm font-normal text-gray-500">
+          <span className="text-sm font-normal text-zinc-500">
             ({selfies.length}/{MAX_PHOTOS})
           </span>
         </h3>
-        <p className="text-sm text-gray-400 mb-4">
+        <p className="text-sm text-zinc-400 mb-4">
           Upload up to {MAX_PHOTOS} photos for AI analysis — selfies, full-body
           shots, or anything that shows your look. More variety = better
           recommendations.
@@ -173,7 +173,7 @@ export default function SelfieUpload({ onSelfieCountChange }: SelfieUploadProps)
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="aspect-[3/4] rounded-xl border-2 border-dashed border-gray-600 flex flex-col items-center justify-center gap-2 text-gray-500 hover:border-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
+            className="aspect-[3/4] rounded-xl border-2 border-dashed border-zinc-600 flex flex-col items-center justify-center gap-2 text-zinc-500 hover:border-zinc-400 hover:text-zinc-300 transition-colors cursor-pointer"
           >
             <svg
               className="w-8 h-8"
@@ -195,7 +195,7 @@ export default function SelfieUpload({ onSelfieCountChange }: SelfieUploadProps)
 
       {/* Uploading indicator */}
       {uploading && (
-        <div className="flex items-center gap-2 text-sm text-gray-400">
+        <div className="flex items-center gap-2 text-sm text-zinc-400">
           <svg
             className="animate-spin w-4 h-4"
             fill="none"
@@ -270,8 +270,8 @@ function SelfieCard({
         expanded
           ? "border-indigo-500 ring-2 ring-indigo-500/30"
           : hasResults
-            ? "border-gray-700 hover:border-gray-500"
-            : "border-gray-700"
+            ? "border-zinc-700 hover:border-zinc-500"
+            : "border-zinc-700"
       }`}
     >
       {/* Clickable area for viewing results */}
@@ -292,17 +292,17 @@ function SelfieCard({
         {isPending && !isDeleting && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
             <div className="relative w-8 h-8 mb-2">
-              <div className="absolute inset-0 rounded-full border-2 border-gray-600" />
+              <div className="absolute inset-0 rounded-full border-2 border-zinc-600" />
               <div className="absolute inset-0 rounded-full border-2 border-t-indigo-400 animate-spin" />
             </div>
-            <p className="text-xs text-gray-300 font-medium">Analyzing...</p>
+            <p className="text-xs text-zinc-300 font-medium">Analyzing...</p>
           </div>
         )}
 
         {isDeleting && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
             <div className="relative w-8 h-8">
-              <div className="absolute inset-0 rounded-full border-2 border-gray-600" />
+              <div className="absolute inset-0 rounded-full border-2 border-zinc-600" />
               <div className="absolute inset-0 rounded-full border-2 border-t-red-400 animate-spin" />
             </div>
           </div>
@@ -341,7 +341,7 @@ function SelfieCard({
                   clipRule="evenodd"
                 />
               </svg>
-              <span className="text-xs text-gray-300">Tap to view</span>
+              <span className="text-xs text-zinc-300">Tap to view</span>
             </div>
           </div>
         )}
@@ -379,13 +379,13 @@ function AnalysisDetail({
 
   if (!parsed) {
     return (
-      <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-5">
+      <div className="rounded-xl border border-zinc-700 bg-zinc-800/50 p-5">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-green-400">Analysis complete</p>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-300"
+            className="text-zinc-500 hover:text-zinc-300"
           >
             <svg
               className="w-4 h-4"
@@ -402,7 +402,7 @@ function AnalysisDetail({
             </svg>
           </button>
         </div>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-zinc-400">
           Results saved but could not be displayed.
         </p>
       </div>
@@ -410,7 +410,7 @@ function AnalysisDetail({
   }
 
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-5 space-y-4">
+    <div className="rounded-xl border border-zinc-700 bg-zinc-800/50 p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="text-md font-semibold text-indigo-400">
           Analysis Results
@@ -418,7 +418,7 @@ function AnalysisDetail({
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-500 hover:text-gray-300"
+          className="text-zinc-500 hover:text-zinc-300"
         >
           <svg
             className="w-4 h-4"
@@ -464,9 +464,9 @@ function AnalysisDetail({
 
 function ResultCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-      <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-      <p className="text-gray-200 font-medium mt-1">{value}</p>
+    <div className="bg-zinc-800 rounded-lg p-3 border border-zinc-700">
+      <p className="text-xs text-zinc-500 uppercase tracking-wide">{label}</p>
+      <p className="text-zinc-200 font-medium mt-1">{value}</p>
     </div>
   );
 }

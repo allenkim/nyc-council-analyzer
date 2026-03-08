@@ -188,7 +188,7 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="flex items-center gap-3 text-gray-400">
+        <div className="flex items-center gap-3 text-zinc-400">
           <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -212,8 +212,8 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
     return (
       <div className="space-y-6">
         <div>
-          <h3 className="text-xl font-bold text-gray-100">Your Style DNA</h3>
-          <p className="text-gray-400 mt-1 text-sm">
+          <h3 className="text-xl font-bold text-zinc-100">Your Style DNA</h3>
+          <p className="text-zinc-400 mt-1 text-sm">
             Based on your selections, here are your aesthetic leanings.
           </p>
         </div>
@@ -223,10 +223,10 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
             {sortedWeights.map(([aesthetic, pct]) => (
               <div key={aesthetic}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-zinc-300">
                     {formatAestheticLabel(aesthetic)}
                   </span>
-                  <span className="text-sm text-gray-500">{pct}%</span>
+                  <span className="text-sm text-zinc-500">{pct}%</span>
                 </div>
                 <div className="h-2.5 bg-zinc-800 rounded-full overflow-hidden">
                   <div
@@ -238,7 +238,7 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 text-sm">
+          <p className="text-zinc-500 text-sm">
             No selections made. Go back and pick some outfits you like.
           </p>
         )}
@@ -247,14 +247,14 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
           <button
             type="button"
             onClick={handlePrevious}
-            className="px-5 py-2.5 rounded-lg font-medium bg-zinc-800 text-gray-300 hover:bg-zinc-700 transition-colors"
+            className="px-5 py-2.5 rounded-lg font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
           >
             Previous
           </button>
           <button
             type="button"
             onClick={handleRetake}
-            className="px-5 py-2.5 rounded-lg font-medium bg-zinc-800 text-gray-300 hover:bg-zinc-700 transition-colors"
+            className="px-5 py-2.5 rounded-lg font-medium bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors"
           >
             Retake
           </button>
@@ -274,10 +274,10 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
       {/* Header */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-zinc-500">
             Round {currentRound + 1} of {totalRounds}
           </span>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-zinc-500">
             Pick 1-2 favorites
           </span>
         </div>
@@ -304,7 +304,7 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
               onClick={() => toggleImage(img.filename)}
               className={`relative rounded-xl overflow-hidden transition-all duration-200 focus:outline-none ${
                 isSelected
-                  ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-gray-900 scale-[1.02]"
+                  ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-zinc-900 scale-[1.02]"
                   : "ring-1 ring-zinc-700 hover:ring-zinc-500"
               }`}
             >
@@ -341,7 +341,7 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
           type="button"
           onClick={handlePrevious}
           disabled={currentRound === 0}
-          className="px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-zinc-800 text-gray-300 hover:bg-zinc-700"
+          className="px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
         >
           Previous
         </button>

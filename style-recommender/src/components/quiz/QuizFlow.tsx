@@ -156,15 +156,15 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
       {/* Section header */}
       {section && (
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-100">{section.title}</h2>
-          <p className="text-gray-400 mt-1">{section.description}</p>
+          <h2 className="text-2xl font-bold text-zinc-100">{section.title}</h2>
+          <p className="text-zinc-400 mt-1">{section.description}</p>
         </div>
       )}
 
       {isSelfieStep && (
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-100">Photo Analysis</h2>
-          <p className="text-gray-400 mt-1">
+          <h2 className="text-2xl font-bold text-zinc-100">Photo Analysis</h2>
+          <p className="text-zinc-400 mt-1">
             Optional: upload photos for AI-powered color and body analysis.
           </p>
         </div>
@@ -193,12 +193,12 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
       )}
 
       {/* Navigation buttons */}
-      <div className="flex justify-between mt-8 pt-6 border-t border-gray-800">
+      <div className="flex justify-between mt-8 pt-6 border-t border-zinc-800">
         <button
           type="button"
           onClick={handleBack}
           disabled={currentStep === 0}
-          className="px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-gray-800 text-gray-300 hover:bg-gray-700"
+          className="px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
         >
           Back
         </button>

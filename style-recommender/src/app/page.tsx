@@ -91,7 +91,7 @@ export default async function StyleHome() {
           <div className="flex flex-wrap gap-3">
             <Link
               href="/profile"
-              className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+              className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               View Full Profile
             </Link>
@@ -113,7 +113,7 @@ export default async function StyleHome() {
         <section className="mb-12 text-center">
           <Link
             href="/quiz"
-            className="inline-block rounded-2xl bg-white px-8 py-4 text-lg font-bold text-black transition-opacity hover:opacity-90"
+            className="inline-block rounded-2xl bg-indigo-600 px-8 py-4 text-lg font-bold text-white transition-opacity hover:opacity-90"
           >
             Get Started — Take the Style Quiz
           </Link>

@@ -35,7 +35,7 @@ export default async function QuizPage() {
   });
 
   return (
-    <main className="min-h-screen bg-gray-900">
+    <main className="min-h-screen bg-zinc-900">
       <QuizFlow
         initialAnswers={initialAnswers}
         initialSelfieCount={selfieCount}
