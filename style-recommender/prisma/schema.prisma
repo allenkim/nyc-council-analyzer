@@ -113,6 +113,21 @@ model OutfitCheck {
   @@index([userId])
 }
 
+model FashionImage {
+  id          String   @id @default(cuid())
+  searchQuery String   // original search term used
+  sourceUrl   String   // where the image was found
+  localPath   String   // local path relative to data dir, e.g. "search/abc.jpg"
+  category    String   // brand, style, trend, item, inspiration
+  tags        String?  // comma-separated tags for filtering
+  width       Int?
+  height      Int?
+  createdAt   DateTime @default(now())
+
+  @@index([category])
+  @@index([searchQuery])
+}
+
 model StyleTask {
   id        String   @id @default(cuid())
   userId    String

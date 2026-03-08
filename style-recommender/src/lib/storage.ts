@@ -1,7 +1,7 @@
 import { mkdir, writeFile, readFile, unlink, stat } from "fs/promises";
 import { join } from "path";
 
-export type ImageFolder = "selfies" | "outfits" | "feed" | "quiz-assets";
+export type ImageFolder = "selfies" | "outfits" | "feed" | "quiz-assets" | "search";
 
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), "data");
 const IMAGES_DIR = join(DATA_DIR, "images");
