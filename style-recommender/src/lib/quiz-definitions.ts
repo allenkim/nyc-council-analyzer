@@ -3,7 +3,7 @@ export type QuizCategory = "body" | "lifestyle" | "preferences" | "style";
 export interface QuizQuestion {
   id: string;
   question: string;
-  type: "select" | "multiselect" | "text" | "number" | "visual-grid";
+  type: "select" | "multiselect" | "text" | "number" | "visual-grid" | "style-discovery";
   options?: { label: string; value: string; imageQuery?: string }[];
   placeholder?: string;
 }
@@ -21,30 +21,28 @@ export const QUIZ_SECTIONS: QuizSection[] = [
     title: "Body & Fit",
     description: "Help us understand your build and fit preferences.",
     questions: [
-      { id: "height", question: "What is your height?", type: "select", options: [
-        { label: "Under 5'0\" / Under 152cm", value: "under-5-0" },
-        { label: "5'0\"–5'3\" / 152–160cm", value: "5-0-to-5-3" },
-        { label: "5'4\"–5'6\" / 163–168cm", value: "5-4-to-5-6" },
-        { label: "5'7\"–5'9\" / 170–175cm", value: "5-7-to-5-9" },
-        { label: "5'10\"–6'0\" / 178–183cm", value: "5-10-to-6-0" },
-        { label: "6'1\"–6'3\" / 185–190cm", value: "6-1-to-6-3" },
-        { label: "6'4\"+ / 193cm+", value: "6-4-plus" },
+      { id: "ageRange", question: "What's your age range?", type: "select", options: [
+        { label: "Under 20", value: "under-20" },
+        { label: "20–25", value: "20-25" },
+        { label: "26–30", value: "26-30" },
+        { label: "31–35", value: "31-35" },
+        { label: "36–40", value: "36-40" },
+        { label: "41–50", value: "41-50" },
+        { label: "50+", value: "50-plus" },
       ]},
-      { id: "weight", question: "What is your weight?", type: "select", options: [
-        { label: "Under 120 lbs / Under 54kg", value: "under-120" },
-        { label: "120–140 lbs / 54–64kg", value: "120-140" },
-        { label: "140–160 lbs / 64–73kg", value: "140-160" },
-        { label: "160–180 lbs / 73–82kg", value: "160-180" },
-        { label: "180–200 lbs / 82–91kg", value: "180-200" },
-        { label: "200–220 lbs / 91–100kg", value: "200-220" },
-        { label: "220+ lbs / 100kg+", value: "220-plus" },
+      { id: "heightFeet", question: "Height (feet)", type: "select", options: [
+        { label: "4 ft", value: "4" },
+        { label: "5 ft", value: "5" },
+        { label: "6 ft", value: "6" },
+        { label: "7 ft", value: "7" },
       ]},
-      { id: "bodyType", question: "How would you describe your build?", type: "select", options: [
-        { label: "Slim / Lean", value: "slim" },
-        { label: "Athletic / Muscular", value: "athletic" },
-        { label: "Average", value: "average" },
-        { label: "Stocky / Broad", value: "stocky" },
-        { label: "Plus-size", value: "plus" },
+      { id: "heightInches", question: "Height (inches)", type: "select", options: [
+        { label: "0 in", value: "0" }, { label: "1 in", value: "1" },
+        { label: "2 in", value: "2" }, { label: "3 in", value: "3" },
+        { label: "4 in", value: "4" }, { label: "5 in", value: "5" },
+        { label: "6 in", value: "6" }, { label: "7 in", value: "7" },
+        { label: "8 in", value: "8" }, { label: "9 in", value: "9" },
+        { label: "10 in", value: "10" }, { label: "11 in", value: "11" },
       ]},
       { id: "preferredFit", question: "What fit do you prefer?", type: "visual-grid", options: [
         { label: "Slim Fit", value: "slim", imageQuery: "korean mens slim fit outfit fashion" },
@@ -120,17 +118,27 @@ export const QUIZ_SECTIONS: QuizSection[] = [
         { label: "Graphic / print", value: "graphic", imageQuery: "korean graphic tee mens streetwear outfit" },
         { label: "Geometric", value: "geometric", imageQuery: "japanese geometric pattern mens fashion" },
       ]},
-      { id: "materials", question: "Materials you love?", type: "multiselect", options: [
-        { label: "Cotton", value: "cotton" }, { label: "Linen", value: "linen" },
-        { label: "Denim", value: "denim" }, { label: "Wool", value: "wool" },
-        { label: "Leather", value: "leather" }, { label: "Cashmere", value: "cashmere" },
-        { label: "Technical / athletic", value: "technical" },
+      { id: "materials", question: "Materials you love", type: "visual-grid", options: [
+        { label: "Cotton", value: "cotton", imageQuery: "cotton fabric texture swatch close up" },
+        { label: "Linen", value: "linen", imageQuery: "linen fabric texture swatch close up" },
+        { label: "Denim", value: "denim", imageQuery: "denim fabric texture swatch close up" },
+        { label: "Wool", value: "wool", imageQuery: "wool fabric texture swatch close up" },
+        { label: "Leather", value: "leather", imageQuery: "leather texture swatch close up" },
+        { label: "Cashmere", value: "cashmere", imageQuery: "cashmere fabric texture swatch close up" },
+        { label: "Silk", value: "silk", imageQuery: "silk fabric texture swatch close up" },
+        { label: "Corduroy", value: "corduroy", imageQuery: "corduroy fabric texture swatch close up" },
+        { label: "Fleece", value: "fleece", imageQuery: "fleece fabric texture swatch close up" },
+        { label: "Nylon / Tech", value: "technical", imageQuery: "technical nylon fabric texture close up" },
+        { label: "Suede", value: "suede", imageQuery: "suede leather texture swatch close up" },
       ]},
-      { id: "avoidMaterials", question: "Materials you dislike?", type: "multiselect", options: [
-        { label: "Polyester", value: "polyester" }, { label: "Leather", value: "leather" },
-        { label: "Wool (itchy)", value: "wool" }, { label: "Silk", value: "silk" },
+      { id: "avoidMaterials", question: "Materials you avoid", type: "visual-grid", options: [
+        { label: "Polyester", value: "polyester", imageQuery: "polyester fabric texture swatch close up" },
+        { label: "Leather", value: "leather", imageQuery: "leather texture swatch close up" },
+        { label: "Wool (itchy)", value: "wool", imageQuery: "wool fabric texture swatch close up" },
+        { label: "Silk", value: "silk", imageQuery: "silk fabric texture swatch close up" },
         { label: "None — I'm open", value: "none" },
       ]},
+      { id: "materialNotes", question: "Any specific material preferences?", type: "text", placeholder: "e.g., Only merino wool, no synthetic blends (optional)" },
       { id: "budget", question: "What's your typical budget for a single item?", type: "select", options: [
         { label: "Under $50", value: "budget" },
         { label: "$50-$150", value: "mid" },
@@ -142,26 +150,10 @@ export const QUIZ_SECTIONS: QuizSection[] = [
   },
   {
     category: "style",
-    title: "Style Identity",
-    description: "Let's discover your personal aesthetic. Pick outfits that appeal to you.",
+    title: "Style Discovery",
+    description: "Pick the outfits that speak to you — no labels, just vibes.",
     questions: [
-      { id: "styleVibes", question: "Pick all the aesthetics that resonate with you", type: "visual-grid", options: [
-        { label: "Minimalist", value: "minimalist", imageQuery: "korean minimalist mens fashion outfit clean" },
-        { label: "Streetwear", value: "streetwear", imageQuery: "korean streetwear mens fashion outfit seoul" },
-        { label: "Classic / Preppy", value: "classic", imageQuery: "korean classic preppy mens fashion outfit" },
-        { label: "Rugged / Workwear", value: "rugged", imageQuery: "japanese workwear heritage mens outfit amekaji" },
-        { label: "Athleisure", value: "athleisure", imageQuery: "korean athleisure mens outfit fashion" },
-        { label: "Smart Casual", value: "smart-casual", imageQuery: "korean smart casual mens outfit fashion" },
-        { label: "Avant-Garde", value: "avant-garde", imageQuery: "japanese avant garde mens fashion comme des garcons" },
-        { label: "City Boy", value: "city-boy", imageQuery: "korean city boy mens fashion outfit trend" },
-        { label: "Quiet Luxury", value: "quiet-luxury", imageQuery: "korean quiet luxury mens outfit fashion" },
-        { label: "Japanese / Techwear", value: "techwear", imageQuery: "japanese techwear mens outfit acronym" },
-        { label: "Ivy / Trad", value: "ivy", imageQuery: "japanese ivy style trad mens fashion" },
-        { label: "Coastal / Relaxed", value: "coastal", imageQuery: "japanese coastal relaxed mens summer outfit" },
-      ]},
-      { id: "styleIcons", question: "Any style icons or people whose style you admire?", type: "text", placeholder: "e.g., Ryan Gosling, Tyler the Creator, David Beckham" },
-      { id: "currentBrands", question: "Brands you currently wear and love?", type: "text", placeholder: "e.g., Nike, Uniqlo, COS, Reigning Champ" },
-      { id: "aspirationalBrands", question: "Brands you'd love to wear more of?", type: "text", placeholder: "e.g., Aime Leon Dore, Our Legacy, Lemaire" },
+      { id: "styleDiscovery", question: "", type: "style-discovery" },
     ],
   },
 ];

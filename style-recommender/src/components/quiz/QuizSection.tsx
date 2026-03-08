@@ -2,6 +2,7 @@
 
 import type { QuizQuestion } from "@/lib/quiz-definitions";
 import VisualGrid from "./VisualGrid";
+import StyleDiscovery from "./StyleDiscovery";
 
 interface QuizSectionProps {
   questions: QuizQuestion[];
@@ -94,6 +95,13 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
               options={q.options}
               selected={(answers[q.id] as string[] | undefined) || []}
               onChange={(selected) => onChange(q.id, selected)}
+            />
+          )}
+
+          {q.type === "style-discovery" && (
+            <StyleDiscovery
+              onChange={(value) => onChange(q.id, value)}
+              initialValue={answers[q.id] as string | undefined}
             />
           )}
         </div>
