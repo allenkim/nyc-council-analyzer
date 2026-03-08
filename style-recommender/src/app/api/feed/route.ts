@@ -72,6 +72,31 @@ export async function POST() {
       take: 10,
     });
 
+    // Check for existing pending/processing task to avoid duplicates
+    const existingTask = await prisma.styleTask.findFirst({
+      where: {
+        userId: user.id,
+        type: "feed_generation",
+        status: { in: ["pending", "processing"] },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (existingTask) {
+      const ageMs = Date.now() - existingTask.createdAt.getTime();
+      if (ageMs < 10 * 60 * 1000) {
+        return NextResponse.json({
+          taskId: existingTask.id,
+          taskStatus: existingTask.status,
+        });
+      }
+      // Stale — mark failed
+      await prisma.styleTask.update({
+        where: { id: existingTask.id },
+        data: { status: "failed", error: "Timed out after 10 minutes" },
+      });
+    }
+
     const prompt = FEED_GENERATION_PROMPT
       .replace("{styleProfile}", profile.mergedProfile)
       .replace("{hearts}", JSON.stringify(recentHearts.map((i) => `${i.brand} ${i.itemName}`)))

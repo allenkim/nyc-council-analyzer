@@ -18,6 +18,16 @@ export default async function DiscoverPage() {
     redirect("/quiz");
   }
 
+  // Check for pending feed generation task
+  const pendingFeedTask = await prisma.styleTask.findFirst({
+    where: {
+      userId: user.id,
+      type: "feed_generation",
+      status: { in: ["pending", "processing"] },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
   // Fetch initial feed data
   const [unseenItems, savedItems, heartedItems] = await Promise.all([
     prisma.feedItem.findMany({
@@ -64,6 +74,7 @@ export default async function DiscoverPage() {
         initialUnseen={serialize(unseenItems)}
         initialSaved={serialize(savedItems)}
         initialHearted={serialize(heartedItems)}
+        pendingTaskId={pendingFeedTask?.id ?? null}
       />
     </div>
   );

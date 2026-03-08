@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTaskPoll } from "@/lib/use-task-poll";
 import FeedCard, { type FeedItemData } from "./FeedCard";
 import SavedItems from "./SavedItems";
@@ -11,6 +11,7 @@ interface FeedViewProps {
   initialUnseen: FeedItemData[];
   initialSaved: FeedItemData[];
   initialHearted: FeedItemData[];
+  pendingTaskId?: string | null;
 }
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -19,6 +20,7 @@ export default function FeedView({
   initialUnseen,
   initialSaved,
   initialHearted,
+  pendingTaskId,
 }: FeedViewProps) {
   const [activeTab, setActiveTab] = useState<Tab>("new");
   const [unseenItems, setUnseenItems] = useState<FeedItemData[]>(initialUnseen);
@@ -27,6 +29,13 @@ export default function FeedView({
   const [isActioning, setIsActioning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isWaiting, isCompleted, isFailed, startPolling, reset: resetTask, task } = useTaskPoll();
+
+  // Auto-resume polling if there's a pending feed generation task from a previous visit
+  useEffect(() => {
+    if (pendingTaskId && !isWaiting) {
+      startPolling(pendingTaskId);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasNoItems = unseenItems.length === 0 && savedItems.length === 0 && heartedItems.length === 0;
   const isFirstVisit = hasNoItems && !isWaiting;
