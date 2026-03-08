@@ -25,6 +25,8 @@ export const STYLE_PROFILE_PROMPT = `You are an expert personal stylist. Based o
 Quiz Answers:
 {quizData}
 
+Note: The "style" category contains "styleDiscovery" — a JSON string with "weights" showing the user's aesthetic preferences as percentages (e.g., {"quiet-luxury": 40, "minimalist": 30, "city-boy": 20}). These were determined by showing the user unlabeled outfit photos and having them pick favorites. Use these weights to inform the style archetype and recommendations.
+
 Photo Analyses (may include multiple photos — synthesize findings across all of them for the most accurate assessment):
 {selfieAnalysis}
 
@@ -41,11 +43,12 @@ Generate a thorough style profile covering:
 Respond in valid JSON with this structure:
 {
   "styleArchetype": "string",
-  "archetypeDescription": "string",
+  "archetypeDescription": "string (1-2 sentences max)",
+  "topAesthetics": ["string (top 2-3 aesthetic names from weights)"],
   "colorRecommendations": { "best": ["string"], "avoid": ["string"], "neutrals": ["string"] },
   "fitRecommendations": { "tops": "string", "bottoms": "string", "outerwear": "string", "general": "string" },
-  "keyPieces": [{ "item": "string", "description": "string", "priority": "essential | recommended | nice-to-have" }],
-  "brandsToExplore": [{ "name": "string", "reason": "string", "priceRange": "string" }],
+  "keyPieces": [{ "item": "string", "description": "string (1 sentence max)", "priority": "essential | recommended | nice-to-have" }],
+  "brandsToExplore": [{ "name": "string", "reason": "string (1 sentence max)", "priceRange": "string" }],
   "styleDos": ["string"],
   "styleDonts": ["string"],
   "accessories": [{ "type": "string", "recommendation": "string" }]
