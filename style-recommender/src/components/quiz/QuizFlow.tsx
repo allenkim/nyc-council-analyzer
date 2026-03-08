@@ -3,7 +3,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { QUIZ_SECTIONS, type QuizCategory } from "@/lib/quiz-definitions";
-import { useTaskPoll } from "@/lib/use-task-poll";
 import ProgressBar from "./ProgressBar";
 import QuizSection from "./QuizSection";
 import SelfieUpload from "./SelfieUpload";
@@ -39,10 +38,10 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
   );
   const [answers, setAnswers] = useState<QuizAnswers>(initialAnswers);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [selfieCount, setSelfieCount] = useState(initialSelfieCount);
   const [analyzedCount, setAnalyzedCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const { isWaiting: generating, isCompleted: profileReady, isFailed: profileFailed, startPolling, task: profileTask } = useTaskPoll();
 
   const handleSelfieCountChange = useCallback((count: number, analyzed: number) => {
     setSelfieCount(count);
@@ -129,6 +128,7 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
 
   async function handleGenerateProfile() {
     setError(null);
+    setGenerating(true);
     try {
       const res = await fetch(`${BASE_PATH}/api/profile`, {
         method: "POST",
@@ -137,18 +137,12 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to generate profile");
       }
-      const data = await res.json();
-      if (data.taskId) {
-        startPolling(data.taskId);
-      }
+      // Redirect to profile page immediately — it will handle the waiting
+      router.push("/profile");
     } catch (err) {
+      setGenerating(false);
       setError(err instanceof Error ? err.message : "Failed to generate profile");
     }
-  }
-
-  // When profile generation completes, redirect to profile page
-  if (profileReady) {
-    router.push(`/profile`);
   }
 
   return (
@@ -192,9 +186,9 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
       )}
 
       {/* Error */}
-      {(error || profileFailed) && (
+      {error && (
         <div className="mt-4 p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-300 text-sm">
-          {error || profileTask?.error || "Profile generation failed. Please try again."}
+          {error}
         </div>
       )}
 
@@ -222,28 +216,26 @@ export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlo
           )}
 
           {isSelfieStep && (
-            <>
-              <button
-                type="button"
-                onClick={handleGenerateProfile}
-                disabled={generating}
-                className="px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                {generating ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    {profileTask?.status === "processing" ? "AI is generating your profile..." : "Waiting for AI..."}
-                  </span>
-                ) : selfieCount > 0 ? (
-                  `Generate Profile${analyzedCount < selfieCount ? " (some photos still analyzing)" : ""}`
-                ) : (
-                  "Skip Photos & Generate Profile"
-                )}
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handleGenerateProfile}
+              disabled={generating}
+              className="px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {generating ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Redirecting...
+                </span>
+              ) : selfieCount > 0 ? (
+                `Generate Profile${analyzedCount < selfieCount ? " (some photos still analyzing)" : ""}`
+              ) : (
+                "Skip Photos & Generate Profile"
+              )}
+            </button>
           )}
         </div>
       </div>

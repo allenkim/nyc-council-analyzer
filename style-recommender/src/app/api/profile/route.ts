@@ -78,6 +78,33 @@ export async function POST() {
       });
     }
 
+    // Check for an existing pending/processing task to avoid duplicates
+    const existingTask = await prisma.styleTask.findFirst({
+      where: {
+        userId: user.id,
+        type: "profile_generation",
+        status: { in: ["pending", "processing"] },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (existingTask) {
+      // Check if stale (> 10 minutes old)
+      const ageMs = Date.now() - existingTask.createdAt.getTime();
+      if (ageMs < 10 * 60 * 1000) {
+        return NextResponse.json({
+          taskId: existingTask.id,
+          taskStatus: existingTask.status,
+          profileId: profile.id,
+        });
+      }
+      // Stale task — mark it failed so a new one can be created
+      await prisma.styleTask.update({
+        where: { id: existingTask.id },
+        data: { status: "failed", error: "Timed out after 10 minutes" },
+      });
+    }
+
     // Queue AI task
     const task = await prisma.styleTask.create({
       data: {
