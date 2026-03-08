@@ -34,8 +34,10 @@ export async function GET(request: NextRequest) {
     if (brand) {
       const lower = brand.toLowerCase();
       catalog.items = catalog.items.filter(
-        (item: { brand?: string; aiBrand?: string }) =>
-          (item.brand || item.aiBrand || "").toLowerCase().includes(lower)
+        (item: { brand?: string; aiBrand?: string }) => {
+          const itemBrand = (item.brand || item.aiBrand || "").toLowerCase();
+          return itemBrand.includes(lower) || lower.includes(itemBrand);
+        }
       );
     }
 
