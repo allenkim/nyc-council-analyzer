@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import { authConfig } from "./auth.config";
 import { prisma } from "./db";
-import { ALLOWED_EMAILS } from "./allowlist";
+import { isEmailAllowed } from "./allowlist";
 
 /**
  * Full auth config with prisma-dependent callbacks.
@@ -13,7 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
     async signIn({ profile }) {
       const email = profile?.email;
-      if (!email || !ALLOWED_EMAILS.includes(email)) {
+      if (!email || !(await isEmailAllowed(email))) {
         return false;
       }
       await prisma.user.upsert({

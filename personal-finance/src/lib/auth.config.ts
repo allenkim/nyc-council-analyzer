@@ -1,5 +1,4 @@
 import Google from "next-auth/providers/google";
-import { ALLOWED_EMAILS } from "./allowlist";
 import type { NextAuthConfig } from "next-auth";
 
 /**
