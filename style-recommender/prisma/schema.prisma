@@ -142,5 +142,6 @@ model StyleTask {
   updatedAt DateTime @updatedAt
 
   @@index([status])
+  @@index([type])
   @@index([userId])
 }

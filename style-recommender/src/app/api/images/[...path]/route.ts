@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { normalize } from "path";
 import {
   readImage,
   imageExists,
@@ -16,10 +17,10 @@ export async function GET(
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { path } = await params;
-    const relativePath = path.join("/");
+    const relativePath = normalize(path.join("/"));
 
     // Prevent directory traversal
-    if (relativePath.includes("..")) {
+    if (relativePath.startsWith("..") || relativePath.includes("/..") || relativePath.startsWith("/")) {
       return NextResponse.json({ error: "Invalid path" }, { status: 400 });
     }
 
