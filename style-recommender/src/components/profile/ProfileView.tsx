@@ -111,7 +111,7 @@ export function ProfileView({
     <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <header className="text-center">
-        <p className="mb-2 text-sm font-medium uppercase tracking-widest text-zinc-500">
+        <p className="mb-2 text-sm font-medium uppercase tracking-widest text-zinc-400">
           Style Profile for
         </p>
         <h1 className="mb-2 text-lg font-medium text-zinc-300">{userName}</h1>
@@ -127,7 +127,7 @@ export function ProfileView({
             {styleArchetype || primary.styleArchetype}
           </h2>
           {primary.archetypeDescription && (
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-zinc-400">
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-zinc-300">
               {primary.archetypeDescription}
             </p>
           )}
@@ -148,7 +148,7 @@ export function ProfileView({
 
         {kibbeType && (
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-6 backdrop-blur-sm">
-            <h3 className="mb-1 text-sm font-medium uppercase tracking-wider text-zinc-400">
+            <h3 className="mb-1 text-sm font-medium uppercase tracking-wider text-zinc-300">
               Kibbe Body Type
             </h3>
             <p className="mb-4 text-2xl font-bold text-white">{kibbeType}</p>
@@ -156,16 +156,16 @@ export function ProfileView({
             {primary.fitRecommendations && (
               <ul className="space-y-2 text-sm text-zinc-300">
                 {primary.fitRecommendations.general && (
-                  <li className="text-zinc-400">{primary.fitRecommendations.general}</li>
+                  <li className="text-zinc-300">{primary.fitRecommendations.general}</li>
                 )}
                 {primary.fitRecommendations.tops && (
-                  <li><span className="text-zinc-500">Tops: </span>{primary.fitRecommendations.tops}</li>
+                  <li><span className="text-zinc-400">Tops: </span>{primary.fitRecommendations.tops}</li>
                 )}
                 {primary.fitRecommendations.bottoms && (
-                  <li><span className="text-zinc-500">Bottoms: </span>{primary.fitRecommendations.bottoms}</li>
+                  <li><span className="text-zinc-400">Bottoms: </span>{primary.fitRecommendations.bottoms}</li>
                 )}
                 {primary.fitRecommendations.outerwear && (
-                  <li><span className="text-zinc-500">Outerwear: </span>{primary.fitRecommendations.outerwear}</li>
+                  <li><span className="text-zinc-400">Outerwear: </span>{primary.fitRecommendations.outerwear}</li>
                 )}
               </ul>
             )}
@@ -202,7 +202,7 @@ export function ProfileView({
                 </span>
                 <div>
                   <h4 className="font-medium text-white">{piece.item}</h4>
-                  <p className="mt-0.5 text-sm text-zinc-400">
+                  <p className="mt-0.5 text-sm text-zinc-300">
                     {piece.description}
                   </p>
                 </div>
@@ -276,7 +276,7 @@ export function ProfileView({
                 <h4 className="mb-1 text-sm font-semibold text-zinc-300">
                   {acc.type}
                 </h4>
-                <p className="text-sm text-zinc-400">{acc.recommendation}</p>
+                <p className="text-sm text-zinc-300">{acc.recommendation}</p>
               </div>
             ))}
           </div>
@@ -290,7 +290,7 @@ export function ProfileView({
             AI Analysis Comparison
           </h3>
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-6">
-            <p className="mb-4 text-sm text-zinc-500">
+            <p className="mb-4 text-sm text-zinc-400">
               Your profile was analyzed by both Claude and Gemini. Here is
               where they agreed and diverged.
             </p>
@@ -304,7 +304,7 @@ export function ProfileView({
                 <div className="space-y-2 text-sm">
                   {primary.styleArchetype && (
                     <div>
-                      <span className="text-zinc-500">Archetype: </span>
+                      <span className="text-zinc-400">Archetype: </span>
                       <span className="text-zinc-200">
                         {primary.styleArchetype}
                       </span>
@@ -312,7 +312,7 @@ export function ProfileView({
                   )}
                   {primary.styleDos && primary.styleDos.length > 0 && (
                     <div>
-                      <span className="text-zinc-500">Top tip: </span>
+                      <span className="text-zinc-400">Top tip: </span>
                       <span className="text-zinc-200">
                         {primary.styleDos[0]}
                       </span>
@@ -321,7 +321,7 @@ export function ProfileView({
                   {primary.brandsToExplore &&
                     primary.brandsToExplore.length > 0 && (
                       <div>
-                        <span className="text-zinc-500">Top brands: </span>
+                        <span className="text-zinc-400">Top brands: </span>
                         <span className="text-zinc-200">
                           {primary.brandsToExplore
                             .slice(0, 3)
@@ -341,7 +341,7 @@ export function ProfileView({
                 <div className="space-y-2 text-sm">
                   {secondary.styleArchetype && (
                     <div>
-                      <span className="text-zinc-500">Archetype: </span>
+                      <span className="text-zinc-400">Archetype: </span>
                       <span className="text-zinc-200">
                         {secondary.styleArchetype}
                       </span>
@@ -349,7 +349,7 @@ export function ProfileView({
                   )}
                   {secondary.styleDos && secondary.styleDos.length > 0 && (
                     <div>
-                      <span className="text-zinc-500">Top tip: </span>
+                      <span className="text-zinc-400">Top tip: </span>
                       <span className="text-zinc-200">
                         {secondary.styleDos[0]}
                       </span>
@@ -358,7 +358,7 @@ export function ProfileView({
                   {secondary.brandsToExplore &&
                     secondary.brandsToExplore.length > 0 && (
                       <div>
-                        <span className="text-zinc-500">Top brands: </span>
+                        <span className="text-zinc-400">Top brands: </span>
                         <span className="text-zinc-200">
                           {secondary.brandsToExplore
                             .slice(0, 3)

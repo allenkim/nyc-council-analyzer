@@ -101,7 +101,7 @@ export function BrandList({ brands }: BrandListProps) {
                   </span>
                 )}
               </div>
-              <p className="text-sm leading-relaxed text-zinc-400">
+              <p className="text-sm leading-relaxed text-zinc-300">
                 {brand.reason}
               </p>
             </div>

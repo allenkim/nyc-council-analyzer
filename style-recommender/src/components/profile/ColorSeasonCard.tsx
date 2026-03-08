@@ -98,7 +98,7 @@ export function ColorSeasonCard({
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-6 backdrop-blur-sm">
-      <h3 className="mb-1 text-sm font-medium uppercase tracking-wider text-zinc-400">
+      <h3 className="mb-1 text-sm font-medium uppercase tracking-wider text-zinc-300">
         Color Season
       </h3>
       <p className="mb-4 text-2xl font-bold text-white">{colorSeason}</p>
@@ -115,7 +115,7 @@ export function ColorSeasonCard({
               />
             ))}
           </div>
-          <p className="mb-4 text-sm leading-relaxed text-zinc-400">
+          <p className="mb-4 text-sm leading-relaxed text-zinc-300">
             {palette.description}
           </p>
           <span
@@ -153,7 +153,7 @@ export function ColorSeasonCard({
           {colorRecommendations.neutrals &&
             colorRecommendations.neutrals.length > 0 && (
               <div>
-                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-300">
                   Neutrals
                 </h4>
                 <div className="flex flex-wrap gap-1.5">
