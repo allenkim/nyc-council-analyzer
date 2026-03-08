@@ -25,14 +25,20 @@ export async function getUser(): Promise<AuthUser | null> {
   }
 
   try {
+    // Finance app uses NextAuth v5 which names cookies "authjs.*"
+    // Style app has NextAuth v4 whose getToken defaults to "next-auth.*"
+    // Explicitly specify the v5 cookie name so we can decode the JWT
+    const cookieName = "__Secure-authjs.session-token";
+
+    const allCookies = Object.fromEntries(
+      (await cookies()).getAll().map((c) => [c.name, c.value])
+    );
+
     const token = await getToken({
-      req: {
-        cookies: Object.fromEntries(
-          (await cookies()).getAll().map((c) => [c.name, c.value])
-        ),
-      } as Parameters<typeof getToken>[0]["req"],
+      req: { cookies: allCookies } as Parameters<typeof getToken>[0]["req"],
       secret: process.env.NEXTAUTH_SECRET,
       secureCookie: true, // Always true — site is behind HTTPS via Caddy
+      cookieName,
     });
 
     const email = token?.email as string | undefined;
