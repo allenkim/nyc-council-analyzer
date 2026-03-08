@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTaskPoll } from "@/lib/use-task-poll";
 import FeedbackView from "./FeedbackView";
 
@@ -14,16 +14,32 @@ interface OutfitCheckResult {
   createdAt: string;
 }
 
-export default function OutfitUpload() {
+interface OutfitUploadProps {
+  pendingTaskId: string | null;
+  pendingCheck: { id: string; imagePath: string } | null;
+}
+
+export default function OutfitUpload({ pendingTaskId, pendingCheck }: OutfitUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<OutfitCheckResult | null>(null);
-  const [outfitCheckId, setOutfitCheckId] = useState<string | null>(null);
+  const [outfitCheckId, setOutfitCheckId] = useState<string | null>(
+    pendingCheck?.id ?? null
+  );
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { task, isWaiting, isCompleted, isFailed, startPolling, reset: resetTask } = useTaskPoll();
+  const resumedRef = useRef(false);
+
+  // Auto-resume polling if there's a pending task from the server
+  useEffect(() => {
+    if (pendingTaskId && !resumedRef.current) {
+      resumedRef.current = true;
+      startPolling(pendingTaskId);
+    }
+  }, [pendingTaskId, startPolling]);
 
   const handleFile = useCallback((selectedFile: File) => {
     if (!selectedFile.type.startsWith("image/")) {
@@ -122,10 +138,15 @@ export default function OutfitUpload() {
     setError(null);
     setOutfitCheckId(null);
     resetTask();
+    resumedRef.current = false;
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const showWaiting = loading || isWaiting;
+
+  // For resumed tasks, use the server-side image path as preview
+  const previewSrc = preview
+    ?? (pendingCheck && showWaiting ? `${basePath}/api/images/${pendingCheck.imagePath}` : null);
 
   return (
     <div className="space-y-6">
@@ -208,10 +229,10 @@ export default function OutfitUpload() {
       {/* Waiting for AI feedback */}
       {showWaiting && (
         <div className="text-center py-16">
-          {preview && (
+          {previewSrc && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
-              src={preview}
+              src={previewSrc}
               alt="Outfit being analyzed"
               className="max-h-48 mx-auto rounded-lg object-contain mb-6 opacity-75"
             />
@@ -223,7 +244,7 @@ export default function OutfitUpload() {
           <p className="text-gray-400">
             {loading ? "Uploading outfit..." : task?.status === "processing" ? "AI is reviewing your outfit..." : "Waiting for AI feedback..."}
           </p>
-          <p className="text-gray-600 text-xs mt-1">This may take a minute</p>
+          <p className="text-gray-600 text-xs mt-1">You can leave this page and come back — your results will be here</p>
         </div>
       )}
 
@@ -247,10 +268,10 @@ export default function OutfitUpload() {
             </button>
           </div>
 
-          {preview && (
+          {(preview || result.imagePath) && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
-              src={preview}
+              src={preview ?? `${basePath}/api/images/${result.imagePath}`}
               alt="Checked outfit"
               className="max-h-64 mx-auto rounded-lg object-contain"
             />

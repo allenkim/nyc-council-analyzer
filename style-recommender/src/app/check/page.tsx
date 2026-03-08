@@ -20,6 +20,26 @@ export default async function OutfitCheckPage() {
   const user = await getUser();
   if (!user) redirect("/");
 
+  // Check for any in-progress outfit check task
+  const pendingTask = await prisma.styleTask.findFirst({
+    where: {
+      userId: user.id,
+      type: "outfit_check",
+      status: { in: ["pending", "processing"] },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // If there's a pending task, find the associated outfit check for the image
+  let pendingCheck: { id: string; imagePath: string } | null = null;
+  if (pendingTask?.targetId) {
+    const oc = await prisma.outfitCheck.findUnique({
+      where: { id: pendingTask.targetId },
+      select: { id: true, imagePath: true },
+    });
+    if (oc) pendingCheck = oc;
+  }
+
   const checks = await prisma.outfitCheck.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
@@ -35,7 +55,10 @@ export default async function OutfitCheckPage() {
         </p>
       </div>
 
-      <OutfitUpload />
+      <OutfitUpload
+        pendingTaskId={pendingTask?.id ?? null}
+        pendingCheck={pendingCheck}
+      />
 
       {/* History */}
       {checks.length > 0 && (
