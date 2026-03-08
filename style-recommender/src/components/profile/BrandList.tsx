@@ -96,7 +96,7 @@ export function BrandList({ brands }: BrandListProps) {
                 <img
                   src={`${basePath}/api/images/fashion/images/${product.filename}`}
                   alt={product.name || brand.name}
-                  className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-screen opacity-90"
+                  className="w-full h-full object-cover"
                   loading="lazy"
                 />
               </div>
