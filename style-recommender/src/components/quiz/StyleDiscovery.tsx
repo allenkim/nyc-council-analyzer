@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -84,15 +84,15 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
   const [currentRound, setCurrentRound] = useState(0);
   const [selections, setSelections] = useState<Selections>({});
   const [showResults, setShowResults] = useState(false);
+  const hasInteractedRef = useRef(false);
 
-  // Parse initial value if provided
+  // Restore saved state on mount — skip if the component has emitted its own changes
   useEffect(() => {
-    if (!initialValue) return;
+    if (hasInteractedRef.current || !initialValue) return;
     try {
       const parsed: StyleDiscoveryData = JSON.parse(initialValue);
       if (parsed.selections && Object.keys(parsed.selections).length > 0) {
         setSelections(parsed.selections);
-        // If all rounds were completed, show results
         if (parsed.weights && Object.keys(parsed.weights).length > 0) {
           setShowResults(true);
         }
@@ -133,25 +133,24 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
 
   function toggleImage(filename: string) {
     if (!manifest) return;
+    hasInteractedRef.current = true;
 
-    setSelections((prev) => {
-      const roundKey = String(currentRound);
-      const current = prev[roundKey] || [];
-      let next: string[];
+    const roundKey = String(currentRound);
+    const current = selections[roundKey] || [];
+    let next: string[];
 
-      if (current.includes(filename)) {
-        next = current.filter((f) => f !== filename);
-      } else if (current.length >= 2) {
-        // Already at max — replace the oldest selection
-        next = [current[1], filename];
-      } else {
-        next = [...current, filename];
-      }
+    if (current.includes(filename)) {
+      next = current.filter((f) => f !== filename);
+    } else if (current.length >= 2) {
+      // Already at max — replace the oldest selection
+      next = [current[1], filename];
+    } else {
+      next = [...current, filename];
+    }
 
-      const updated = { ...prev, [roundKey]: next };
-      notifyChange(updated, manifest);
-      return updated;
-    });
+    const updated = { ...selections, [roundKey]: next };
+    setSelections(updated);
+    notifyChange(updated, manifest);
   }
 
   function handleNext() {
