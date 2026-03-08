@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readImage, imageExists } from "@/lib/storage";
+import {
+  readImage,
+  imageExists,
+  readFashionImage,
+  fashionImageExists,
+} from "@/lib/storage";
 import { getUser } from "@/lib/session";
 
 export async function GET(
@@ -18,11 +23,17 @@ export async function GET(
       return NextResponse.json({ error: "Invalid path" }, { status: 400 });
     }
 
-    if (!(await imageExists(relativePath))) {
+    // Route fashion/* paths to FASHION_DATA_DIR
+    const isFashion = path[0] === "fashion";
+    const resolvedPath = isFashion ? path.slice(1).join("/") : relativePath;
+    const exists = isFashion ? fashionImageExists : imageExists;
+    const read = isFashion ? readFashionImage : readImage;
+
+    if (!(await exists(resolvedPath))) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const { buffer, mimeType } = await readImage(relativePath);
+    const { buffer, mimeType } = await read(resolvedPath);
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
