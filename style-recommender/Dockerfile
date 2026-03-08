@@ -35,5 +35,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 
 USER appuser
 
+# Mount fashion data: -v /path/to/koko/data/fashion:/app/fashion-data
+ENV FASHION_DATA_DIR=/app/fashion-data
+
 EXPOSE 3001
 CMD ["sh", "-c", "npx prisma migrate deploy && cp -rn /app/seed/quiz-assets /app/data/images/ 2>/dev/null; PORT=3001 node server.js"]
