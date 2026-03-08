@@ -19,7 +19,20 @@ export default function QuizSection({ questions, answers, onChange }: QuizSectio
             {q.question}
           </label>
 
-          {q.type === "select" && q.options && (
+          {q.type === "select" && q.options && q.options.length > 10 && (
+            <select
+              value={(answers[q.id] as string) || ""}
+              onChange={(e) => onChange(q.id, e.target.value)}
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="" disabled>Select...</option>
+              {q.options.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          )}
+
+          {q.type === "select" && q.options && q.options.length <= 10 && (
             <div className="space-y-2">
               {q.options.map((opt) => {
                 const isChecked = answers[q.id] === opt.value;
