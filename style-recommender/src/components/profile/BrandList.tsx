@@ -91,12 +91,12 @@ export function BrandList({ brands }: BrandListProps) {
             className="rounded-lg border border-zinc-800 bg-zinc-900/70 overflow-hidden transition-colors hover:border-zinc-700"
           >
             {product?.filename && (
-              <div className="aspect-[4/3] overflow-hidden">
+              <div className="aspect-[4/3] overflow-hidden bg-zinc-800">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`${basePath}/api/images/fashion/images/${product.filename}`}
                   alt={product.name || brand.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-screen opacity-90"
                   loading="lazy"
                 />
               </div>

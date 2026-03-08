@@ -16,6 +16,27 @@ export default async function ProfilePage() {
     orderBy: { updatedAt: "desc" },
   });
 
+  // Check for a pending/processing task (may be newer than existing profile)
+  const pendingTask = await prisma.styleTask.findFirst({
+    where: {
+      userId: user.id,
+      type: "profile_generation",
+      status: { in: ["pending", "processing"] },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // If there's a pending task newer than the profile, show generating state
+  if (pendingTask && (!profile?.mergedProfile || pendingTask.createdAt > profile.updatedAt)) {
+    return (
+      <ProfileGenerating
+        taskId={pendingTask.id}
+        taskStatus={pendingTask.status}
+        taskCreatedAt={pendingTask.createdAt.toISOString()}
+      />
+    );
+  }
+
   if (profile?.mergedProfile) {
     let profileData: { claude?: Record<string, unknown>; gemini?: Record<string, unknown> };
     try {
@@ -31,26 +52,6 @@ export default async function ProfilePage() {
         colorSeason={profile.colorSeason}
         kibbeType={profile.kibbeType}
         styleArchetype={profile.styleArchetype}
-      />
-    );
-  }
-
-  // No completed profile — check for a pending/processing task
-  const pendingTask = await prisma.styleTask.findFirst({
-    where: {
-      userId: user.id,
-      type: "profile_generation",
-      status: { in: ["pending", "processing"] },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  if (pendingTask) {
-    return (
-      <ProfileGenerating
-        taskId={pendingTask.id}
-        taskStatus={pendingTask.status}
-        taskCreatedAt={pendingTask.createdAt.toISOString()}
       />
     );
   }
