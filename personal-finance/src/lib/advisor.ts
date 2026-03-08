@@ -179,7 +179,24 @@ export function getTargetDateSplit(targetYear: number): { stockPct: number; bond
 
 // ── Boglehead Target Allocation ─────────────────────────────────────────────
 
-export function getTargetAllocation(age: number, riskTolerance: string) {
+interface CustomTargets {
+  targetDomesticStocks?: number | null;
+  targetIntlStocks?: number | null;
+  targetBonds?: number | null;
+}
+
+export function getTargetAllocation(age: number, riskTolerance: string, custom?: CustomTargets) {
+  // Use custom overrides if all three are set
+  if (custom?.targetDomesticStocks != null && custom?.targetIntlStocks != null && custom?.targetBonds != null) {
+    return {
+      bonds: custom.targetBonds,
+      domesticStocks: custom.targetDomesticStocks,
+      internationalStocks: custom.targetIntlStocks,
+      total: custom.targetDomesticStocks + custom.targetIntlStocks + custom.targetBonds,
+      isCustom: true,
+    };
+  }
+
   let bondPercent: number;
   switch (riskTolerance) {
     case "AGGRESSIVE":
@@ -201,7 +218,20 @@ export function getTargetAllocation(age: number, riskTolerance: string) {
     domesticStocks: domesticPercent,
     internationalStocks: internationalPercent,
     total: 100,
+    isCustom: false,
   };
+}
+
+export function getTargetExplanation(age: number, riskTolerance: string): string {
+  const rt = riskTolerance.toLowerCase();
+  switch (riskTolerance) {
+    case "AGGRESSIVE":
+      return `Age ${age} with ${rt} risk: bonds = age - 20 = ${Math.max(10, age - 20)}%. Stocks split 60/40 US/international (Boglehead standard).`;
+    case "CONSERVATIVE":
+      return `Age ${age} with ${rt} risk: bonds = age + 10 = ${Math.min(80, age + 10)}%. Stocks split 60/40 US/international (Boglehead standard).`;
+    default:
+      return `Age ${age} with ${rt} risk: bonds = age - 10 = ${Math.max(10, age - 10)}%. Stocks split 60/40 US/international (Boglehead standard).`;
+  }
 }
 
 // ── Smart Allocation Calculation ────────────────────────────────────────────

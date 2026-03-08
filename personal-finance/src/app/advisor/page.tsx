@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/session";
-import { categorizeAllocation, getTargetAllocation } from "@/lib/advisor";
+import { categorizeAllocation, getTargetAllocation, getTargetExplanation } from "@/lib/advisor";
 import AdvisorClient from "./AdvisorClient";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +38,11 @@ export default async function AdvisorPage() {
   let allocationData = null;
   if (profile && holdings.length > 0) {
     const allocation = categorizeAllocation(holdings);
-    const target = getTargetAllocation(profile.age, profile.riskTolerance);
+    const target = getTargetAllocation(profile.age, profile.riskTolerance, {
+      targetDomesticStocks: profile.targetDomesticStocks,
+      targetIntlStocks: profile.targetIntlStocks,
+      targetBonds: profile.targetBonds,
+    });
     const inv = allocation.investableTotal;
     if (inv > 0) {
       allocationData = {
@@ -52,6 +56,7 @@ export default async function AdvisorPage() {
         investableTotal: inv,
         realEstate: allocation.realEstate,
         crypto: allocation.crypto,
+        explanation: target.isCustom ? "Custom target allocation" : getTargetExplanation(profile.age, profile.riskTolerance),
       };
     }
   }

@@ -4,6 +4,7 @@ import { getUser } from "@/lib/session";
 import { getAnthropicClient } from "@/lib/anthropic";
 import {
   getTargetAllocation,
+  getTargetExplanation,
   categorizeAllocation,
   classifyHolding,
   getTaxLocationAdvice,
@@ -83,7 +84,11 @@ export async function POST() {
 
     // --- 1. Asset Allocation Analysis (investable portfolio only) ---
     const allocation = categorizeAllocation(holdings);
-    const target = getTargetAllocation(profile.age, profile.riskTolerance);
+    const target = getTargetAllocation(profile.age, profile.riskTolerance, {
+      targetDomesticStocks: profile.targetDomesticStocks,
+      targetIntlStocks: profile.targetIntlStocks,
+      targetBonds: profile.targetBonds,
+    });
     const inv = allocation.investableTotal;
 
     if (inv > 0) {
@@ -373,6 +378,7 @@ Reply with a JSON array of objects, each with "title" (short), "summary" (1-2 se
       investableTotal: invTotal,
       realEstate: allocation.realEstate,
       crypto: allocation.crypto,
+      explanation: target.isCustom ? "Custom target allocation" : getTargetExplanation(profile.age, profile.riskTolerance),
     } : null;
 
     return NextResponse.json({ generated: recommendations.length, recommendations: saved, allocation: allocationSummary });

@@ -216,19 +216,15 @@ export default async function MoneyFlowPage() {
         </div>
       </div>
 
-      <MonthlyChart data={monthlyData} />
-
-      {/* Recurring & Subscriptions */}
+      {/* Recurring & Subscriptions — prominent position */}
       <div className="bg-card border border-card-border rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-muted">
-            Recurring & Subscriptions
-            <span className="ml-2 text-foreground font-semibold">{formatCurrency(recurringTotal)}/mo</span>
-          </h3>
+          <div>
+            <h3 className="text-sm font-medium text-muted">Recurring & Subscriptions</h3>
+            <p className="text-2xl font-bold mt-1">{formatCurrency(recurringTotal)}<span className="text-sm font-normal text-muted">/mo</span></p>
+          </div>
           <ResetBillsButton />
         </div>
-
-        <BillSuggestions />
 
         {(overdueBills.length > 0 || dueSoonBills.length > 0) && (
           <div className="space-y-3 mb-4">
@@ -242,22 +238,19 @@ export default async function MoneyFlowPage() {
         )}
 
         {(upcomingBills.length > 0 || paidBills.length > 0) && (
-          <details className="group mb-4">
-            <summary className="cursor-pointer text-sm text-muted hover:text-foreground transition-colors">
-              {upcomingBills.length + paidBills.length} more bills ({paidBills.length} paid)
-            </summary>
-            <div className="space-y-3 mt-3">
-              {upcomingBills.map((bill) => (
-                <BillCard key={bill.id} bill={bill} />
-              ))}
-              {paidBills.map((bill) => (
-                <BillCard key={bill.id} bill={bill} />
-              ))}
-            </div>
-          </details>
+          <div className="space-y-3 mb-4">
+            {upcomingBills.map((bill) => (
+              <BillCard key={bill.id} bill={bill} />
+            ))}
+            {paidBills.map((bill) => (
+              <BillCard key={bill.id} bill={bill} />
+            ))}
+          </div>
         )}
 
         <RecurringCharges charges={recurringList} />
+
+        <BillSuggestions />
 
         <details className="mt-4">
           <summary className="cursor-pointer text-sm text-muted hover:text-foreground transition-colors">
@@ -268,6 +261,8 @@ export default async function MoneyFlowPage() {
           </div>
         </details>
       </div>
+
+      <MonthlyChart data={monthlyData} />
 
       {/* Spending by Category with Budget Progress */}
       <div className="bg-card border border-card-border rounded-xl p-6">

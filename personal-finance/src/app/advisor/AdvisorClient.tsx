@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 import ProfileForm from "./ProfileForm";
 import RecommendationCard from "./RecommendationCard";
 import GenerateButton from "./GenerateButton";
@@ -33,10 +35,12 @@ export interface AllocationData {
     domesticStocks: number;
     internationalStocks: number;
     bonds: number;
+    isCustom?: boolean;
   };
   investableTotal: number;
   realEstate: number;
   crypto: number;
+  explanation?: string;
 }
 
 function getCreditRating(score: number) {
@@ -70,6 +74,116 @@ function AllocationBar({ segments }: { segments: { label: string; pct: number; c
             <span className="font-medium tabular-nums">{seg.pct.toFixed(0)}%</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function CustomTargetEditor({ current, onSaved }: {
+  current: { domesticStocks: number; internationalStocks: number; bonds: number };
+  onSaved: (target: { domesticStocks: number; internationalStocks: number; bonds: number }) => void;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [domestic, setDomestic] = useState(Math.round(current.domesticStocks));
+  const [intl, setIntl] = useState(Math.round(current.internationalStocks));
+  const [bonds, setBonds] = useState(Math.round(current.bonds));
+  const [saving, setSaving] = useState(false);
+
+  const total = domestic + intl + bonds;
+
+  async function save() {
+    if (total !== 100) return;
+    setSaving(true);
+    try {
+      const res = await fetch(apiUrl("/api/profile"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetDomesticStocks: domestic,
+          targetIntlStocks: intl,
+          targetBonds: bonds,
+        }),
+      });
+      if (res.ok) {
+        onSaved({ domesticStocks: domestic, internationalStocks: intl, bonds });
+        setOpen(false);
+        router.refresh();
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function reset() {
+    setSaving(true);
+    try {
+      const res = await fetch(apiUrl("/api/profile"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetDomesticStocks: null,
+          targetIntlStocks: null,
+          targetBonds: null,
+        }),
+      });
+      if (res.ok) {
+        setOpen(false);
+        router.refresh();
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="mt-3 text-xs text-accent hover:text-accent/80 transition-colors">
+        Customize target allocation
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-card-border space-y-3">
+      <p className="text-xs text-muted">Set your own target allocation (must total 100%)</p>
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-2 text-xs">
+          <span className="w-2 h-2 rounded-full bg-accent" />
+          US Stocks
+          <input type="number" min={0} max={100} value={domestic} onChange={(e) => setDomestic(Number(e.target.value))}
+            className="w-14 text-right bg-transparent border border-card-border rounded px-1.5 py-1 text-sm" />
+          <span className="text-muted">%</span>
+        </label>
+        <label className="flex items-center gap-2 text-xs">
+          <span className="w-2 h-2 rounded-full bg-blue-400" />
+          Intl Stocks
+          <input type="number" min={0} max={100} value={intl} onChange={(e) => setIntl(Number(e.target.value))}
+            className="w-14 text-right bg-transparent border border-card-border rounded px-1.5 py-1 text-sm" />
+          <span className="text-muted">%</span>
+        </label>
+        <label className="flex items-center gap-2 text-xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          Bonds
+          <input type="number" min={0} max={100} value={bonds} onChange={(e) => setBonds(Number(e.target.value))}
+            className="w-14 text-right bg-transparent border border-card-border rounded px-1.5 py-1 text-sm" />
+          <span className="text-muted">%</span>
+        </label>
+      </div>
+      <div className="flex items-center gap-3">
+        {total !== 100 && <span className="text-xs text-danger">Total: {total}% (must be 100%)</span>}
+        <div className="flex gap-2 ml-auto">
+          <button onClick={reset} disabled={saving} className="text-xs text-muted hover:text-foreground transition-colors disabled:opacity-50">
+            Reset to default
+          </button>
+          <button onClick={() => setOpen(false)} className="text-xs text-muted hover:text-foreground transition-colors">
+            Cancel
+          </button>
+          <button onClick={save} disabled={saving || total !== 100}
+            className="px-3 py-1 text-xs font-medium bg-accent text-white rounded-lg disabled:opacity-50 hover:bg-accent/90 transition-colors">
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -154,7 +268,9 @@ export default function AdvisorClient({
               />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted uppercase tracking-wider mb-3">Target</p>
+              <p className="text-xs font-medium text-muted uppercase tracking-wider mb-3">
+                Target {allocation.target.isCustom && <span className="normal-case font-normal text-accent">(custom)</span>}
+              </p>
               <AllocationBar
                 segments={[
                   { label: "US Stocks", pct: allocation.target.domesticStocks, color: "bg-accent" },
@@ -164,11 +280,18 @@ export default function AdvisorClient({
               />
             </div>
           </div>
-          <p className="text-xs text-muted mt-4">
-            Investable portfolio: ${Math.round(allocation.investableTotal).toLocaleString()}
-            {allocation.realEstate > 0 && <> &middot; Real estate: ${Math.round(allocation.realEstate).toLocaleString()}</>}
-            {allocation.crypto > 0 && <> &middot; Crypto: ${Math.round(allocation.crypto).toLocaleString()}</>}
-          </p>
+          <div className="flex items-start justify-between mt-4 gap-4">
+            <p className="text-xs text-muted">
+              {allocation.explanation && <span className="block mb-1">{allocation.explanation}</span>}
+              Investable portfolio: ${Math.round(allocation.investableTotal).toLocaleString()}
+              {allocation.realEstate > 0 && <> &middot; Real estate: ${Math.round(allocation.realEstate).toLocaleString()}</>}
+              {allocation.crypto > 0 && <> &middot; Crypto: ${Math.round(allocation.crypto).toLocaleString()}</>}
+            </p>
+          </div>
+          <CustomTargetEditor
+            current={allocation.target}
+            onSaved={(updated) => setAllocation((prev) => prev ? { ...prev, target: { ...updated, isCustom: true }, explanation: "Custom target allocation" } : prev)}
+          />
         </div>
       )}
 

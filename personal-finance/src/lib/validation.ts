@@ -176,6 +176,9 @@ export const createProfileSchema = z.object({
   dependents: z.number().int().min(0).optional().nullable(),
   isHomeowner: z.boolean().optional().nullable(),
   monthlyTakeHome: z.number().min(0).optional().nullable(),
+  targetDomesticStocks: z.number().int().min(0).max(100).optional().nullable(),
+  targetIntlStocks: z.number().int().min(0).max(100).optional().nullable(),
+  targetBonds: z.number().int().min(0).max(100).optional().nullable(),
 });
 
 // --- Advisor ---

@@ -20,7 +20,10 @@ export async function PUT(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const parsed = createProfileSchema.safeParse(body);
+
+    // Support partial updates (e.g., just target allocation fields)
+    const partialSchema = createProfileSchema.partial();
+    const parsed = partialSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues.map((i) => i.message).join(", ") },
@@ -28,10 +31,29 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const profile = await prisma.userProfile.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id, ...parsed.data },
-      update: parsed.data,
+    // For upsert, we need required fields — check if profile exists
+    const existing = await prisma.userProfile.findUnique({ where: { userId: user.id } });
+
+    if (existing) {
+      // Update: partial is fine
+      const profile = await prisma.userProfile.update({
+        where: { userId: user.id },
+        data: parsed.data,
+      });
+      return NextResponse.json(profile);
+    }
+
+    // Create: need full schema
+    const fullParsed = createProfileSchema.safeParse(body);
+    if (!fullParsed.success) {
+      return NextResponse.json(
+        { error: fullParsed.error.issues.map((i) => i.message).join(", ") },
+        { status: 400 }
+      );
+    }
+
+    const profile = await prisma.userProfile.create({
+      data: { userId: user.id, ...fullParsed.data },
     });
 
     return NextResponse.json(profile);
