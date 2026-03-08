@@ -189,7 +189,7 @@ export function getTargetAllocation(age: number, riskTolerance: string) {
       bondPercent = Math.min(80, age + 10);
       break;
     default: // MODERATE
-      bondPercent = age;
+      bondPercent = Math.max(10, age - 10);
   }
 
   const stockPercent = 100 - bondPercent;

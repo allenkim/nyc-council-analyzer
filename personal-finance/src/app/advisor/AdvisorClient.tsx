@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { apiUrl } from "@/lib/api";
 import ProfileForm from "./ProfileForm";
 import RecommendationCard from "./RecommendationCard";
 import GenerateButton from "./GenerateButton";
@@ -23,6 +22,23 @@ interface CreditScoreData {
   createdAt: string;
 }
 
+export interface AllocationData {
+  current: {
+    domesticStocks: number;
+    internationalStocks: number;
+    bonds: number;
+    cash: number;
+  };
+  target: {
+    domesticStocks: number;
+    internationalStocks: number;
+    bonds: number;
+  };
+  investableTotal: number;
+  realEstate: number;
+  crypto: number;
+}
+
 function getCreditRating(score: number) {
   if (score >= 800) return { label: "Exceptional", color: "text-success" };
   if (score >= 740) return { label: "Very Good", color: "text-success" };
@@ -31,28 +47,57 @@ function getCreditRating(score: number) {
   return { label: "Poor", color: "text-danger" };
 }
 
+function AllocationBar({ segments }: { segments: { label: string; pct: number; color: string }[] }) {
+  return (
+    <div>
+      <div className="flex h-3 rounded-full overflow-hidden bg-accent-light/30 mb-2">
+        {segments.map((seg) =>
+          seg.pct > 0.5 ? (
+            <div
+              key={seg.label}
+              className={`${seg.color} transition-all duration-500`}
+              style={{ width: `${seg.pct}%` }}
+              title={`${seg.label}: ${seg.pct.toFixed(1)}%`}
+            />
+          ) : null
+        )}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {segments.map((seg) => (
+          <div key={seg.label} className="flex items-center gap-1.5 text-xs">
+            <span className={`w-2 h-2 rounded-full ${seg.color}`} />
+            <span className="text-muted">{seg.label}</span>
+            <span className="font-medium tabular-nums">{seg.pct.toFixed(0)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AdvisorClient({
   hasProfile,
   initialRecommendations,
   creditScore,
   previousScore,
+  initialAllocation,
 }: {
   hasProfile: boolean;
   initialRecommendations: Recommendation[];
   creditScore: CreditScoreData | null;
   previousScore: CreditScoreData | null;
+  initialAllocation: AllocationData | null;
 }) {
   const [recommendations, setRecommendations] = useState(initialRecommendations);
+  const [allocation, setAllocation] = useState<AllocationData | null>(initialAllocation);
 
-  const refresh = useCallback(() => {
-    fetch(apiUrl("/api/advisor"))
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setRecommendations(data);
-      })
-      .catch(() => {
-        // silently ignore refresh errors — stale data is acceptable
-      });
+  const handleGenerated = useCallback((data: Record<string, unknown>) => {
+    if (data.recommendations && Array.isArray(data.recommendations)) {
+      setRecommendations(data.recommendations as Recommendation[]);
+    }
+    if (data.allocation) {
+      setAllocation(data.allocation as AllocationData);
+    }
   }, []);
 
   function handleDismiss(id: string) {
@@ -81,7 +126,7 @@ export default function AdvisorClient({
           <h2 className="text-3xl font-semibold tracking-tight">Advisor</h2>
           <p className="text-muted text-sm mt-1">Boglehead-based financial recommendations</p>
         </div>
-        {hasProfile && <GenerateButton onGenerated={refresh} />}
+        {hasProfile && <GenerateButton onGenerated={handleGenerated} />}
       </div>
 
       <details open={!hasProfile} className="group">
@@ -92,6 +137,40 @@ export default function AdvisorClient({
           <ProfileForm />
         </div>
       </details>
+
+      {allocation && (
+        <div className="bg-card border border-card-border rounded-xl p-6">
+          <h3 className="text-sm font-medium text-muted mb-4">Portfolio Allocation</h3>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <p className="text-xs font-medium text-muted uppercase tracking-wider mb-3">Current</p>
+              <AllocationBar
+                segments={[
+                  { label: "US Stocks", pct: allocation.current.domesticStocks, color: "bg-accent" },
+                  { label: "Intl Stocks", pct: allocation.current.internationalStocks, color: "bg-blue-400" },
+                  { label: "Bonds", pct: allocation.current.bonds, color: "bg-emerald-500" },
+                  { label: "Cash", pct: allocation.current.cash, color: "bg-amber-400" },
+                ]}
+              />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted uppercase tracking-wider mb-3">Target</p>
+              <AllocationBar
+                segments={[
+                  { label: "US Stocks", pct: allocation.target.domesticStocks, color: "bg-accent" },
+                  { label: "Intl Stocks", pct: allocation.target.internationalStocks, color: "bg-blue-400" },
+                  { label: "Bonds", pct: allocation.target.bonds, color: "bg-emerald-500" },
+                ]}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted mt-4">
+            Investable portfolio: ${Math.round(allocation.investableTotal).toLocaleString()}
+            {allocation.realEstate > 0 && <> &middot; Real estate: ${Math.round(allocation.realEstate).toLocaleString()}</>}
+            {allocation.crypto > 0 && <> &middot; Crypto: ${Math.round(allocation.crypto).toLocaleString()}</>}
+          </p>
+        </div>
+      )}
 
       {topActions.length > 0 && (
         <div className="space-y-3">
@@ -122,8 +201,8 @@ export default function AdvisorClient({
         </div>
       )}
 
-      <div className="bg-card border border-card-border rounded-xl p-6">
-        <h3 className="text-sm font-medium text-muted mb-4">Credit Score</h3>
+      <div className="bg-card border border-card-border rounded-xl p-6 space-y-4">
+        <h3 className="text-sm font-medium text-muted">Credit Score</h3>
         {creditScore ? (
           <div className="flex items-baseline gap-3 mb-4">
             <span className={`text-4xl font-bold ${rating?.color}`}>{creditScore.score}</span>

@@ -360,7 +360,22 @@ Reply with a JSON array of objects, each with "title" (short), "summary" (1-2 se
       orderBy: { priority: "desc" },
     });
 
-    return NextResponse.json({ generated: recommendations.length, recommendations: saved });
+    // Return allocation summary alongside recommendations
+    const invTotal = allocation.investableTotal;
+    const allocationSummary = invTotal > 0 ? {
+      current: {
+        domesticStocks: (allocation.domesticStocks / invTotal) * 100,
+        internationalStocks: (allocation.internationalStocks / invTotal) * 100,
+        bonds: (allocation.bonds / invTotal) * 100,
+        cash: (allocation.cash / invTotal) * 100,
+      },
+      target,
+      investableTotal: invTotal,
+      realEstate: allocation.realEstate,
+      crypto: allocation.crypto,
+    } : null;
+
+    return NextResponse.json({ generated: recommendations.length, recommendations: saved, allocation: allocationSummary });
   } catch (error) {
     console.error("Error generating recommendations:", error);
     return NextResponse.json({ error: "Failed to generate recommendations" }, { status: 500 });

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { apiUrl } from "@/lib/api";
 
-export default function GenerateButton({ onGenerated }: { onGenerated: () => void }) {
+export default function GenerateButton({ onGenerated }: { onGenerated: (data: Record<string, unknown>) => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,7 +13,8 @@ export default function GenerateButton({ onGenerated }: { onGenerated: () => voi
     try {
       const res = await fetch(apiUrl("/api/advisor"), { method: "POST" });
       if (res.ok) {
-        onGenerated();
+        const data = await res.json();
+        onGenerated(data);
       } else {
         const msg = await res.text();
         setError(msg || "Failed to generate advice");
