@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { jwtDecrypt } from "jose";
 import { hkdf } from "@panva/hkdf";
+import { createHmac } from "crypto";
 import { prisma } from "./db";
 
 export type AuthUser = { id: string; email: string; name: string | null };
@@ -52,6 +53,18 @@ export async function getUser(): Promise<AuthUser | null> {
     const allCookies = Object.fromEntries(
       (await cookies()).getAll().map((c) => [c.name, c.value])
     );
+
+    // Test session bypass: HMAC-signed cookie set by /api/auth/test-login
+    const testSecret = process.env.TEST_LOGIN_SECRET;
+    const testCookie = allCookies["style-test-session"];
+    if (testSecret && testCookie) {
+      const [email, sig] = testCookie.split(".");
+      const expected = createHmac("sha256", testSecret).update(email).digest("hex");
+      if (sig === expected) {
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (user) return { id: user.id, email: user.email, name: user.name };
+      }
+    }
 
     const token = allCookies[COOKIE_NAME];
     if (!token) return null;
