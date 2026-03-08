@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
   const user = await getUser();
-  if (!user) redirect("/style/login");
+  if (!user) redirect("/");
 
   const profile = await prisma.styleProfile.findFirst({
     where: { userId: user.id },
@@ -15,14 +15,14 @@ export default async function ProfilePage() {
   });
 
   if (!profile?.mergedProfile) {
-    redirect("/style/quiz");
+    redirect("/quiz");
   }
 
   let profileData: { claude?: Record<string, unknown>; gemini?: Record<string, unknown> };
   try {
     profileData = JSON.parse(profile.mergedProfile);
   } catch {
-    redirect("/style/quiz");
+    redirect("/quiz");
   }
 
   return (

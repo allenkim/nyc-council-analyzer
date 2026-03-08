@@ -7,7 +7,7 @@ import FeedView from "@/components/feed/FeedView";
 
 export default async function DiscoverPage() {
   const user = await getUser();
-  if (!user) redirect("/style/login");
+  if (!user) redirect("/");
 
   // Check if user has a style profile — redirect to quiz if not
   const profile = await prisma.styleProfile.findFirst({
@@ -15,7 +15,7 @@ export default async function DiscoverPage() {
   });
 
   if (!profile?.mergedProfile) {
-    redirect("/style/quiz");
+    redirect("/quiz");
   }
 
   // Fetch initial feed data

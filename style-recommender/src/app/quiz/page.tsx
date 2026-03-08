@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function QuizPage() {
   const user = await getUser();
-  if (!user) redirect("/finance/login");
+  if (!user) redirect("/");
 
   // Load existing quiz responses
   const quizResponses = await prisma.quizResponse.findMany({

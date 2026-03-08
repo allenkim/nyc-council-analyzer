@@ -32,7 +32,7 @@ export async function getUser(): Promise<AuthUser | null> {
         ),
       } as Parameters<typeof getToken>[0]["req"],
       secret: process.env.NEXTAUTH_SECRET,
-      secureCookie: process.env.NODE_ENV === "production",
+      secureCookie: true, // Always true — site is behind HTTPS via Caddy
     });
 
     const email = token?.email as string | undefined;

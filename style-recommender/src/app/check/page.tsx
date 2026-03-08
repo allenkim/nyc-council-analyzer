@@ -18,7 +18,7 @@ function extractRating(feedback: string | null): number | null {
 
 export default async function OutfitCheckPage() {
   const user = await getUser();
-  if (!user) redirect("/finance/login");
+  if (!user) redirect("/");
 
   const checks = await prisma.outfitCheck.findMany({
     where: { userId: user.id },
