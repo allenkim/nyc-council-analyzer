@@ -7,6 +7,11 @@ export type AuthUser = { id: string; email: string; name: string | null };
 
 const COOKIE_NAME = "__Secure-authjs.session-token";
 
+// Short-lived cache to prevent concurrent upserts from causing SQLite lock contention
+// (e.g. when a page loads 10+ images that all call getUser() simultaneously)
+const userCache = new Map<string, { user: AuthUser; expires: number }>();
+const CACHE_TTL = 10_000; // 10 seconds
+
 /**
  * Derive the encryption key the same way Auth.js v5 does.
  * Algorithm: A256CBC-HS512, key derived via HKDF-SHA256.
@@ -64,6 +69,12 @@ export async function getUser(): Promise<AuthUser | null> {
     const email = payload.email as string | undefined;
     if (!email) return null;
 
+    // Check cache to avoid concurrent upserts causing SQLite locks
+    const cached = userCache.get(email);
+    if (cached && Date.now() < cached.expires) {
+      return cached.user;
+    }
+
     // Upsert: create local user record on first visit
     const user = await prisma.user.upsert({
       where: { email },
@@ -75,7 +86,9 @@ export async function getUser(): Promise<AuthUser | null> {
       },
     });
 
-    return { id: user.id, email: user.email, name: user.name };
+    const authUser = { id: user.id, email: user.email, name: user.name };
+    userCache.set(email, { user: authUser, expires: Date.now() + CACHE_TTL });
+    return authUser;
   } catch (error) {
     console.error("Error reading session:", error);
     return null;

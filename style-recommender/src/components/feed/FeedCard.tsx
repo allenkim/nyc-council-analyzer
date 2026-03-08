@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface FeedItemData {
   id: string;
@@ -24,11 +24,34 @@ interface FeedCardProps {
 
 export default function FeedCard({ item, onAction, isActioning }: FeedCardProps) {
   const [rationaleExpanded, setRationaleExpanded] = useState(false);
+  const [catalogImage, setCatalogImage] = useState<string | null>(null);
 
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+  // If no imagePath, try to find a product image from the fashion catalog by brand
+  useEffect(() => {
+    if (item.imagePath) return;
+    let cancelled = false;
+    async function fetchImage() {
+      try {
+        const res = await fetch(
+          `${basePath}/api/fashion/products?brand=${encodeURIComponent(item.brand)}&limit=1`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const items = data.items || [];
+        if (!cancelled && items.length > 0 && items[0].filename) {
+          setCatalogImage(`${basePath}/api/images/fashion/images/${items[0].filename}`);
+        }
+      } catch { /* ignore */ }
+    }
+    fetchImage();
+    return () => { cancelled = true; };
+  }, [item.imagePath, item.brand, basePath]);
+
   const imageUrl = item.imagePath
     ? `${basePath}/api/images/${item.imagePath}`
-    : null;
+    : catalogImage;
 
   return (
     <div className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden max-w-md w-full mx-auto">

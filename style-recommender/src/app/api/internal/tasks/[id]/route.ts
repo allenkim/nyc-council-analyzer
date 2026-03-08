@@ -149,6 +149,7 @@ async function applyTaskResult(
           category: item.category,
           priceRange: item.priceRange || null,
           aiRationale: item.rationale || null,
+          sourceUrl: item.searchQuery || null,
           batchId,
         })),
       });
