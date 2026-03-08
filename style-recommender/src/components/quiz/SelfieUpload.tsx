@@ -32,6 +32,7 @@ function parseAnalysis(raw: string | null): Record<string, unknown> | null {
 export default function SelfieUpload({ onSelfieCountChange }: SelfieUploadProps) {
   const [selfies, setSelfies] = useState<SelfieRecord[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -112,6 +113,28 @@ export default function SelfieUpload({ onSelfieCountChange }: SelfieUploadProps)
     }
   }
 
+  async function handleDelete(id: string) {
+    setDeleting(id);
+    setError(null);
+    try {
+      const res = await fetch(`${BASE_PATH}/api/quiz/selfie`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Delete failed");
+      }
+      if (expandedId === id) setExpandedId(null);
+      await fetchSelfies();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete photo");
+    } finally {
+      setDeleting(null);
+    }
+  }
+
   const canAddMore = selfies.length < MAX_PHOTOS && !uploading;
 
   return (
@@ -137,9 +160,11 @@ export default function SelfieUpload({ onSelfieCountChange }: SelfieUploadProps)
             key={selfie.id}
             selfie={selfie}
             expanded={expandedId === selfie.id}
+            isDeleting={deleting === selfie.id}
             onToggle={() =>
               setExpandedId(expandedId === selfie.id ? null : selfie.id)
             }
+            onDelete={() => handleDelete(selfie.id)}
           />
         ))}
 
@@ -224,11 +249,15 @@ export default function SelfieUpload({ onSelfieCountChange }: SelfieUploadProps)
 function SelfieCard({
   selfie,
   expanded,
+  isDeleting,
   onToggle,
+  onDelete,
 }: {
   selfie: SelfieRecord;
   expanded: boolean;
+  isDeleting: boolean;
   onToggle: () => void;
+  onDelete: () => void;
 }) {
   const hasResults =
     selfie.analysisResultClaude || selfie.analysisResultGemini;
@@ -236,73 +265,104 @@ function SelfieCard({
   const isPending = !hasResults && !isFailed;
 
   return (
-    <button
-      type="button"
-      onClick={hasResults ? onToggle : undefined}
+    <div
       className={`relative aspect-[3/4] rounded-xl overflow-hidden border transition-all ${
         expanded
           ? "border-indigo-500 ring-2 ring-indigo-500/30"
           : hasResults
-            ? "border-gray-700 hover:border-gray-500 cursor-pointer"
-            : "border-gray-700 cursor-default"
+            ? "border-gray-700 hover:border-gray-500"
+            : "border-gray-700"
       }`}
     >
-      {/* Thumbnail */}
-      <img
-        src={`${BASE_PATH}/api/images/${selfie.imagePath}`}
-        alt="Uploaded photo"
-        className={`w-full h-full object-cover ${isPending ? "opacity-50" : ""}`}
-      />
+      {/* Clickable area for viewing results */}
+      <button
+        type="button"
+        onClick={hasResults ? onToggle : undefined}
+        className={`w-full h-full ${hasResults ? "cursor-pointer" : "cursor-default"}`}
+      >
+        {/* Thumbnail */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`${BASE_PATH}/api/images/${selfie.imagePath}`}
+          alt="Uploaded photo"
+          className={`w-full h-full object-cover ${isPending || isDeleting ? "opacity-50" : ""}`}
+        />
 
-      {/* Status overlay */}
-      {isPending && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
-          <div className="relative w-8 h-8 mb-2">
-            <div className="absolute inset-0 rounded-full border-2 border-gray-600" />
-            <div className="absolute inset-0 rounded-full border-2 border-t-indigo-400 animate-spin" />
+        {/* Status overlay */}
+        {isPending && !isDeleting && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+            <div className="relative w-8 h-8 mb-2">
+              <div className="absolute inset-0 rounded-full border-2 border-gray-600" />
+              <div className="absolute inset-0 rounded-full border-2 border-t-indigo-400 animate-spin" />
+            </div>
+            <p className="text-xs text-gray-300 font-medium">Analyzing...</p>
           </div>
-          <p className="text-xs text-gray-300 font-medium">Analyzing...</p>
-        </div>
-      )}
+        )}
 
-      {isFailed && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
-          <svg
-            className="w-6 h-6 text-red-400 mb-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-            />
-          </svg>
-          <p className="text-xs text-red-300">Failed</p>
-        </div>
-      )}
+        {isDeleting && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+            <div className="relative w-8 h-8">
+              <div className="absolute inset-0 rounded-full border-2 border-gray-600" />
+              <div className="absolute inset-0 rounded-full border-2 border-t-red-400 animate-spin" />
+            </div>
+          </div>
+        )}
 
-      {hasResults && (
-        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-          <div className="flex items-center gap-1">
+        {isFailed && !isDeleting && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
             <svg
-              className="w-3.5 h-3.5 text-green-400"
-              fill="currentColor"
-              viewBox="0 0 20 20"
+              className="w-6 h-6 text-red-400 mb-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
               <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
               />
             </svg>
-            <span className="text-xs text-gray-300">Tap to view</span>
+            <p className="text-xs text-red-300">Failed</p>
           </div>
-        </div>
-      )}
-    </button>
+        )}
+
+        {hasResults && !isDeleting && (
+          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+            <div className="flex items-center gap-1">
+              <svg
+                className="w-3.5 h-3.5 text-green-400"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="text-xs text-gray-300">Tap to view</span>
+            </div>
+          </div>
+        )}
+      </button>
+
+      {/* Delete button (top-right corner) */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        disabled={isDeleting}
+        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-red-600 flex items-center justify-center transition-colors"
+        title="Remove photo"
+      >
+        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
   );
 }
 

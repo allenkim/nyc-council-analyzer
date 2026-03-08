@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/session";
-import { saveImage } from "@/lib/storage";
+import { saveImage, deleteImage } from "@/lib/storage";
 import { SELFIE_ANALYSIS_PROMPT } from "@/lib/prompts";
 
 // POST — upload selfie, save locally, queue AI analysis
@@ -91,5 +91,42 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching selfies:", error);
     return NextResponse.json({ error: "Failed to fetch selfies" }, { status: 500 });
+  }
+}
+
+// DELETE — remove a selfie upload and its associated tasks + image file
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { id } = await request.json();
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+    // Verify the selfie belongs to this user
+    const selfie = await prisma.selfieUpload.findFirst({
+      where: { id, userId: user.id },
+    });
+    if (!selfie) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Delete associated tasks
+    await prisma.styleTask.deleteMany({
+      where: { targetId: id, type: "selfie_analysis" },
+    });
+
+    // Delete DB record
+    await prisma.selfieUpload.delete({ where: { id } });
+
+    // Delete image file (best-effort)
+    try {
+      await deleteImage(selfie.imagePath);
+    } catch {
+      // File may already be gone
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Error deleting selfie:", error);
+    return NextResponse.json({ error: "Failed to delete selfie" }, { status: 500 });
   }
 }
