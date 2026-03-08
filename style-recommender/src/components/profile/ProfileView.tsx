@@ -221,7 +221,7 @@ export function ProfileView({
           </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {primary.styleDos && primary.styleDos.length > 0 && (
-              <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/20 p-5">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
                 <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-emerald-400">
                   <span className="text-lg">+</span> Do
                 </h4>
@@ -229,7 +229,7 @@ export function ProfileView({
                   {primary.styleDos.map((item, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2 text-sm text-emerald-100/80"
+                      className="flex items-start gap-2 text-sm text-zinc-300"
                     >
                       <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       {item}
@@ -240,7 +240,7 @@ export function ProfileView({
             )}
 
             {primary.styleDonts && primary.styleDonts.length > 0 && (
-              <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-5">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
                 <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-red-400">
                   <span className="text-lg">-</span> Don&apos;t
                 </h4>
@@ -248,7 +248,7 @@ export function ProfileView({
                   {primary.styleDonts.map((item, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2 text-sm text-red-100/80"
+                      className="flex items-start gap-2 text-sm text-zinc-300"
                     >
                       <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
                       {item}
