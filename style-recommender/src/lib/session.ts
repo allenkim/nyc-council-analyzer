@@ -42,7 +42,15 @@ export async function getUser(): Promise<AuthUser | null> {
     });
 
     const email = token?.email as string | undefined;
-    if (!token || !email) return null;
+    if (!token || !email) {
+      console.error("[session] token decode failed", {
+        hasToken: !!token,
+        email,
+        cookieNames: Object.keys(allCookies),
+        hasCookie: cookieName in allCookies,
+      });
+      return null;
+    }
 
     // Upsert: create local user record on first visit
     const user = await prisma.user.upsert({
