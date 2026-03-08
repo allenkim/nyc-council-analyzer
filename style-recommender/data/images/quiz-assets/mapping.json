@@ -19,5 +19,21 @@
   "styleVibes_quiet-luxury": "quiz-assets/styleVibes_quiet-luxury.jpg",
   "styleVibes_techwear": "quiz-assets/styleVibes_techwear.jpg",
   "styleVibes_ivy": "quiz-assets/styleVibes_ivy.jpg",
-  "styleVibes_coastal": "quiz-assets/styleVibes_coastal.jpg"
+  "styleVibes_coastal": "quiz-assets/styleVibes_coastal.jpg",
+  "materials_cotton": "quiz-assets/materials_cotton.jpg",
+  "materials_linen": "quiz-assets/materials_linen.jpg",
+  "materials_denim": "quiz-assets/materials_denim.jpg",
+  "materials_wool": "quiz-assets/materials_wool.jpg",
+  "materials_leather": "quiz-assets/materials_leather.jpg",
+  "materials_cashmere": "quiz-assets/materials_cashmere.jpg",
+  "materials_silk": "quiz-assets/materials_silk.jpg",
+  "materials_corduroy": "quiz-assets/materials_corduroy.jpg",
+  "materials_fleece": "quiz-assets/materials_fleece.jpg",
+  "materials_technical": "quiz-assets/materials_technical.jpg",
+  "materials_suede": "quiz-assets/materials_suede.jpg",
+  "materials_polyester": "quiz-assets/materials_polyester.jpg",
+  "avoidMaterials_polyester": "quiz-assets/avoidMaterials_polyester.jpg",
+  "avoidMaterials_leather": "quiz-assets/avoidMaterials_leather.jpg",
+  "avoidMaterials_wool": "quiz-assets/avoidMaterials_wool.jpg",
+  "avoidMaterials_silk": "quiz-assets/avoidMaterials_silk.jpg"
 }
