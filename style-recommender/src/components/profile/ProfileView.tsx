@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ColorSeasonCard } from "./ColorSeasonCard";
 import { BrandList } from "./BrandList";
+import { MoodBoard } from "./MoodBoard";
 
 interface ProfileData {
   styleArchetype?: string;
@@ -24,6 +25,7 @@ interface ProfileData {
     description: string;
     priority: "essential" | "recommended" | "nice-to-have";
   }>;
+  topAesthetics?: string[];
   brandsToExplore?: Array<{
     name: string;
     reason: string;
@@ -130,6 +132,11 @@ export function ProfileView({
         </section>
       )}
 
+      {/* Mood Board */}
+      {primary.topAesthetics && primary.topAesthetics.length > 0 && (
+        <MoodBoard aesthetics={primary.topAesthetics} />
+      )}
+
       {/* Color Season & Kibbe Type - Two Column */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <ColorSeasonCard
@@ -145,43 +152,20 @@ export function ProfileView({
             <p className="mb-4 text-2xl font-bold text-white">{kibbeType}</p>
 
             {primary.fitRecommendations && (
-              <div className="space-y-3">
+              <ul className="space-y-2 text-sm text-zinc-300">
                 {primary.fitRecommendations.general && (
-                  <p className="text-sm leading-relaxed text-zinc-400">
-                    {primary.fitRecommendations.general}
-                  </p>
+                  <li className="text-zinc-400">{primary.fitRecommendations.general}</li>
                 )}
                 {primary.fitRecommendations.tops && (
-                  <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                      Tops
-                    </h4>
-                    <p className="text-sm text-zinc-300">
-                      {primary.fitRecommendations.tops}
-                    </p>
-                  </div>
+                  <li><span className="text-zinc-500">Tops: </span>{primary.fitRecommendations.tops}</li>
                 )}
                 {primary.fitRecommendations.bottoms && (
-                  <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                      Bottoms
-                    </h4>
-                    <p className="text-sm text-zinc-300">
-                      {primary.fitRecommendations.bottoms}
-                    </p>
-                  </div>
+                  <li><span className="text-zinc-500">Bottoms: </span>{primary.fitRecommendations.bottoms}</li>
                 )}
                 {primary.fitRecommendations.outerwear && (
-                  <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                      Outerwear
-                    </h4>
-                    <p className="text-sm text-zinc-300">
-                      {primary.fitRecommendations.outerwear}
-                    </p>
-                  </div>
+                  <li><span className="text-zinc-500">Outerwear: </span>{primary.fitRecommendations.outerwear}</li>
                 )}
-              </div>
+              </ul>
             )}
           </div>
         )}
