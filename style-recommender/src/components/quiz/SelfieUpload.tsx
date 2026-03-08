@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useTaskPoll } from "@/lib/use-task-poll";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+const MAX_PHOTOS = 5;
 
-interface SelfieAnalysis {
+interface SelfieRecord {
   id: string;
+  imagePath: string;
   analysisResultClaude: string | null;
   analysisResultGemini: string | null;
+  taskStatus: string | null;
+  createdAt: string;
 }
 
 interface SelfieUploadProps {
-  existingAnalysis?: SelfieAnalysis | null;
-  onAnalysisComplete: (analysis: SelfieAnalysis) => void;
+  onSelfieCountChange?: (count: number, analyzedCount: number) => void;
 }
 
 function parseAnalysis(raw: string | null): Record<string, unknown> | null {
@@ -27,31 +29,55 @@ function parseAnalysis(raw: string | null): Record<string, unknown> | null {
   }
 }
 
-export default function SelfieUpload({ existingAnalysis, onAnalysisComplete }: SelfieUploadProps) {
-  const [preview, setPreview] = useState<string | null>(null);
+export default function SelfieUpload({ onSelfieCountChange }: SelfieUploadProps) {
+  const [selfies, setSelfies] = useState<SelfieRecord[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState<SelfieAnalysis | null>(existingAnalysis || null);
-  const [selfieId, setSelfieId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { task, isWaiting, isCompleted, isFailed, startPolling } = useTaskPoll();
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setError(null);
-    setAnalysis(null);
-    const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  }
+  const hasPending = selfies.some(
+    (s) =>
+      !s.analysisResultClaude &&
+      !s.analysisResultGemini &&
+      s.taskStatus !== "failed"
+  );
+
+  const analyzedCount = selfies.filter(
+    (s) => s.analysisResultClaude || s.analysisResultGemini
+  ).length;
+
+  // Fetch selfies on mount and poll if any are pending
+  const fetchSelfies = useCallback(async () => {
+    try {
+      const res = await fetch(`${BASE_PATH}/api/quiz/selfie`);
+      if (!res.ok) return;
+      const data: SelfieRecord[] = await res.json();
+      setSelfies(data);
+    } catch {
+      // Silently retry on next interval
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSelfies();
+  }, [fetchSelfies]);
+
+  // Poll every 3s while any selfie is pending
+  useEffect(() => {
+    if (!hasPending) return;
+    const timer = setInterval(fetchSelfies, 3000);
+    return () => clearInterval(timer);
+  }, [hasPending, fetchSelfies]);
+
+  // Notify parent of selfie count changes
+  useEffect(() => {
+    onSelfieCountChange?.(selfies.length, analyzedCount);
+  }, [selfies.length, analyzedCount, onSelfieCountChange]);
 
   async function handleUpload() {
     const file = fileRef.current?.files?.[0];
-    if (!file) {
-      setError("Please select a photo first.");
-      return;
-    }
+    if (!file) return;
 
     setUploading(true);
     setError(null);
@@ -70,167 +96,308 @@ export default function SelfieUpload({ existingAnalysis, onAnalysisComplete }: S
         throw new Error(data.error || "Upload failed");
       }
 
-      const result = await res.json();
-      setSelfieId(result.id);
-
-      if (result.taskId) {
-        // Start polling the task
-        startPolling(result.taskId);
-      }
+      // Refresh the list
+      await fetchSelfies();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
-  // When task completes, fetch the updated selfie record
-  if (isCompleted && selfieId && !analysis) {
-    fetch(`${BASE_PATH}/api/quiz/selfie`)
-      .then((res) => res.json())
-      .then((selfies: SelfieAnalysis[]) => {
-        const updated = selfies.find((s) => s.id === selfieId);
-        if (updated) {
-          setAnalysis(updated);
-          onAnalysisComplete(updated);
-        }
-      })
-      .catch(() => {});
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files?.[0]) {
+      handleUpload();
+    }
   }
 
-  const claudeParsed = analysis ? parseAnalysis(analysis.analysisResultClaude) : null;
-  const geminiParsed = analysis ? parseAnalysis(analysis.analysisResultGemini) : null;
-  const parsed = claudeParsed || geminiParsed;
-
-  const showWaiting = uploading || isWaiting;
+  const canAddMore = selfies.length < MAX_PHOTOS && !uploading;
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-100 mb-2">Upload a Selfie</h3>
+        <h3 className="text-lg font-medium text-gray-100 mb-2">
+          Upload Photos{" "}
+          <span className="text-sm font-normal text-gray-500">
+            ({selfies.length}/{MAX_PHOTOS})
+          </span>
+        </h3>
         <p className="text-sm text-gray-400 mb-4">
-          A well-lit front-facing photo helps our AI analyze your color season, face shape, and
-          body proportions for more personalized recommendations.
+          Upload up to {MAX_PHOTOS} photos for AI analysis — selfies, full-body
+          shots, or anything that shows your look. More variety = better
+          recommendations.
         </p>
       </div>
 
-      {/* Upload area */}
-      <div
-        onClick={() => fileRef.current?.click()}
-        className="relative border-2 border-dashed border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:border-gray-400 transition-colors"
-      >
-        {preview ? (
-          <img
-            src={preview}
-            alt="Selfie preview"
-            className="mx-auto max-h-80 rounded-lg object-cover"
+      {/* Photo grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {selfies.map((selfie) => (
+          <SelfieCard
+            key={selfie.id}
+            selfie={selfie}
+            expanded={expandedId === selfie.id}
+            onToggle={() =>
+              setExpandedId(expandedId === selfie.id ? null : selfie.id)
+            }
           />
-        ) : (
-          <div className="space-y-3">
+        ))}
+
+        {/* Add photo button */}
+        {canAddMore && (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="aspect-[3/4] rounded-xl border-2 border-dashed border-gray-600 flex flex-col items-center justify-center gap-2 text-gray-500 hover:border-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
+          >
             <svg
-              className="mx-auto w-12 h-12 text-gray-500"
+              className="w-8 h-8"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              strokeWidth={1.5}
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"
+                d="M12 4.5v15m7.5-7.5h-15"
               />
             </svg>
-            <p className="text-gray-400">Click to select a photo</p>
-            <p className="text-xs text-gray-600">JPG, PNG, or WebP</p>
-          </div>
+            <span className="text-xs">Add photo</span>
+          </button>
         )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
-        />
       </div>
 
-      {/* Upload button */}
-      {preview && !analysis && !showWaiting && (
-        <button
-          type="button"
-          onClick={handleUpload}
-          disabled={uploading}
-          className="w-full py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-indigo-600 hover:bg-indigo-700 text-white"
-        >
-          Upload & Analyze
-        </button>
-      )}
-
-      {/* Waiting for AI analysis */}
-      {showWaiting && (
-        <div className="text-center py-6">
-          <svg className="animate-spin w-8 h-8 mx-auto text-indigo-400 mb-3" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      {/* Uploading indicator */}
+      {uploading && (
+        <div className="flex items-center gap-2 text-sm text-gray-400">
+          <svg
+            className="animate-spin w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
-          <p className="text-gray-400 text-sm">
-            {uploading ? "Uploading photo..." : task?.status === "processing" ? "AI is analyzing your photo..." : "Waiting for AI analysis..."}
-          </p>
-          <p className="text-gray-600 text-xs mt-1">This may take a minute</p>
+          Uploading...
         </div>
       )}
 
       {/* Error */}
-      {(error || isFailed) && (
+      {error && (
         <div className="p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-300 text-sm">
-          {error || task?.error || "Analysis failed. Please try again."}
+          {error}
         </div>
       )}
 
-      {/* Analysis results */}
-      {analysis && parsed && (
-        <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-5 space-y-4">
-          <h4 className="text-md font-semibold text-indigo-400">Analysis Results</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {"colorSeason" in parsed && parsed.colorSeason != null && (
-              <ResultCard label="Color Season" value={String(parsed.colorSeason)} />
-            )}
-            {"faceShape" in parsed && parsed.faceShape != null && (
-              <ResultCard label="Face Shape" value={String(parsed.faceShape)} />
-            )}
-            {"kibbeType" in parsed && parsed.kibbeType != null && (
-              <ResultCard label="Kibbe Type" value={String(parsed.kibbeType)} />
-            )}
-            {"skinUndertone" in parsed && parsed.skinUndertone != null && (
-              <ResultCard label="Skin Undertone" value={String(parsed.skinUndertone)} />
-            )}
-            {"hairColor" in parsed && parsed.hairColor != null && (
-              <ResultCard label="Hair Color" value={String(parsed.hairColor)} />
-            )}
-            {"eyeColor" in parsed && parsed.eyeColor != null && (
-              <ResultCard label="Eye Color" value={String(parsed.eyeColor)} />
-            )}
+      {/* Hidden file input */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Expanded analysis results */}
+      {expandedId && (
+        <AnalysisDetail
+          selfie={selfies.find((s) => s.id === expandedId)!}
+          onClose={() => setExpandedId(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function SelfieCard({
+  selfie,
+  expanded,
+  onToggle,
+}: {
+  selfie: SelfieRecord;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const hasResults =
+    selfie.analysisResultClaude || selfie.analysisResultGemini;
+  const isFailed = selfie.taskStatus === "failed";
+  const isPending = !hasResults && !isFailed;
+
+  return (
+    <button
+      type="button"
+      onClick={hasResults ? onToggle : undefined}
+      className={`relative aspect-[3/4] rounded-xl overflow-hidden border transition-all ${
+        expanded
+          ? "border-indigo-500 ring-2 ring-indigo-500/30"
+          : hasResults
+            ? "border-gray-700 hover:border-gray-500 cursor-pointer"
+            : "border-gray-700 cursor-default"
+      }`}
+    >
+      {/* Thumbnail */}
+      <img
+        src={`${BASE_PATH}/api/images/${selfie.imagePath}`}
+        alt="Uploaded photo"
+        className={`w-full h-full object-cover ${isPending ? "opacity-50" : ""}`}
+      />
+
+      {/* Status overlay */}
+      {isPending && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+          <div className="relative w-8 h-8 mb-2">
+            <div className="absolute inset-0 rounded-full border-2 border-gray-600" />
+            <div className="absolute inset-0 rounded-full border-2 border-t-indigo-400 animate-spin" />
           </div>
-          {!claudeParsed && !geminiParsed && (
-            <p className="text-sm text-gray-400">
-              Analysis completed but results could not be parsed. Your data has been saved.
-            </p>
-          )}
+          <p className="text-xs text-gray-300 font-medium">Analyzing...</p>
         </div>
       )}
 
-      {analysis && !parsed && (
-        <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-5">
-          <p className="text-sm text-green-400">
-            Selfie uploaded and analyzed successfully. Your data has been saved.
-          </p>
+      {isFailed && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+          <svg
+            className="w-6 h-6 text-red-400 mb-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+            />
+          </svg>
+          <p className="text-xs text-red-300">Failed</p>
         </div>
       )}
+
+      {hasResults && (
+        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+          <div className="flex items-center gap-1">
+            <svg
+              className="w-3.5 h-3.5 text-green-400"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="text-xs text-gray-300">Tap to view</span>
+          </div>
+        </div>
+      )}
+    </button>
+  );
+}
+
+function AnalysisDetail({
+  selfie,
+  onClose,
+}: {
+  selfie: SelfieRecord;
+  onClose: () => void;
+}) {
+  const claudeParsed = parseAnalysis(selfie.analysisResultClaude);
+  const geminiParsed = parseAnalysis(selfie.analysisResultGemini);
+  const parsed = claudeParsed || geminiParsed;
+
+  if (!parsed) {
+    return (
+      <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm text-green-400">Analysis complete</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-300"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <p className="text-sm text-gray-400">
+          Results saved but could not be displayed.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-md font-semibold text-indigo-400">
+          Analysis Results
+        </h4>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-300"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {"colorSeason" in parsed && parsed.colorSeason != null && (
+          <ResultCard label="Color Season" value={String(parsed.colorSeason)} />
+        )}
+        {"faceShape" in parsed && parsed.faceShape != null && (
+          <ResultCard label="Face Shape" value={String(parsed.faceShape)} />
+        )}
+        {"kibbeType" in parsed && parsed.kibbeType != null && (
+          <ResultCard label="Kibbe Type" value={String(parsed.kibbeType)} />
+        )}
+        {"skinUndertone" in parsed && parsed.skinUndertone != null && (
+          <ResultCard
+            label="Skin Undertone"
+            value={String(parsed.skinUndertone)}
+          />
+        )}
+        {"hairColor" in parsed && parsed.hairColor != null && (
+          <ResultCard label="Hair Color" value={String(parsed.hairColor)} />
+        )}
+        {"eyeColor" in parsed && parsed.eyeColor != null && (
+          <ResultCard label="Eye Color" value={String(parsed.eyeColor)} />
+        )}
+      </div>
     </div>
   );
 }

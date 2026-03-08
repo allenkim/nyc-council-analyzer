@@ -89,18 +89,28 @@ async function applyTaskResult(
         (geminiParsed?.styleArchetype as string | undefined) ||
         null;
 
-      // Get selfie analysis for color/kibbe
-      const selfie = await prisma.selfieUpload.findFirst({
-        where: { userId },
+      // Get selfie analyses for color/kibbe — check all photos, use first match
+      const selfies = await prisma.selfieUpload.findMany({
+        where: {
+          userId,
+          OR: [
+            { analysisResultClaude: { not: null } },
+            { analysisResultGemini: { not: null } },
+          ],
+        },
         orderBy: { createdAt: "desc" },
       });
 
       let colorSeason: string | null = null;
       let kibbeType: string | null = null;
-      if (selfie?.analysisResultClaude) {
-        const parsed = parseJsonResponse(selfie.analysisResultClaude);
-        colorSeason = (parsed?.colorSeason as string) || null;
-        kibbeType = (parsed?.kibbeType as string) || null;
+      for (const selfie of selfies) {
+        const parsed =
+          parseJsonResponse(selfie.analysisResultClaude) ||
+          parseJsonResponse(selfie.analysisResultGemini);
+        if (!parsed) continue;
+        if (!colorSeason && parsed.colorSeason) colorSeason = parsed.colorSeason as string;
+        if (!kibbeType && parsed.kibbeType) kibbeType = parsed.kibbeType as string;
+        if (colorSeason && kibbeType) break;
       }
 
       const profilePayload = {

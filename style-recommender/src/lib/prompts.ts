@@ -1,4 +1,4 @@
-export const SELFIE_ANALYSIS_PROMPT = `You are an expert personal stylist and color analyst. Analyze this selfie and provide:
+export const SELFIE_ANALYSIS_PROMPT = `You are an expert personal stylist and color analyst. Analyze this photo (which may be a selfie, full-body shot, side profile, or outfit photo) and provide:
 
 1. **12-Type Color Season**: Determine the person's color season from the 12-type system (e.g., Soft Autumn, Deep Winter, Light Spring). Explain your reasoning based on skin undertone, hair color, and eye color.
 
@@ -20,12 +20,12 @@ Respond in valid JSON with this structure:
   "undertoneReasoning": "string"
 }`;
 
-export const STYLE_PROFILE_PROMPT = `You are an expert personal stylist. Based on the following quiz answers and selfie analysis, generate a comprehensive style profile.
+export const STYLE_PROFILE_PROMPT = `You are an expert personal stylist. Based on the following quiz answers and photo analyses, generate a comprehensive style profile.
 
 Quiz Answers:
 {quizData}
 
-Selfie Analysis:
+Photo Analyses (may include multiple photos — synthesize findings across all of them for the most accurate assessment):
 {selfieAnalysis}
 
 Generate a thorough style profile covering:

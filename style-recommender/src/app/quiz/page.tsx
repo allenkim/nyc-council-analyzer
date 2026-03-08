@@ -29,17 +29,16 @@ export default async function QuizPage() {
     }
   }
 
-  // Check if user already has a selfie
-  const selfie = await prisma.selfieUpload.findFirst({
+  // Count existing selfies
+  const selfieCount = await prisma.selfieUpload.count({
     where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
   });
 
   return (
     <main className="min-h-screen bg-gray-900">
       <QuizFlow
         initialAnswers={initialAnswers}
-        hasSelfie={!!selfie}
+        initialSelfieCount={selfieCount}
       />
     </main>
   );

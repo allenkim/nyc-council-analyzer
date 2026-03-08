@@ -40,15 +40,27 @@ export async function POST() {
       quizResponses.map((r) => [r.category, JSON.parse(r.answers)])
     );
 
-    // Get latest selfie analysis
-    const selfie = await prisma.selfieUpload.findFirst({
-      where: { userId: user.id },
+    // Get all selfie analyses
+    const selfies = await prisma.selfieUpload.findMany({
+      where: {
+        userId: user.id,
+        OR: [
+          { analysisResultClaude: { not: null } },
+          { analysisResultGemini: { not: null } },
+        ],
+      },
       orderBy: { createdAt: "desc" },
+      take: 5,
     });
 
-    const selfieAnalysis = selfie
-      ? { claude: selfie.analysisResultClaude, gemini: selfie.analysisResultGemini }
-      : null;
+    const selfieAnalysis =
+      selfies.length > 0
+        ? selfies.map((s, i) => ({
+            photoNumber: i + 1,
+            claude: s.analysisResultClaude,
+            gemini: s.analysisResultGemini,
+          }))
+        : null;
 
     // Build the prompt
     const prompt = STYLE_PROFILE_PROMPT

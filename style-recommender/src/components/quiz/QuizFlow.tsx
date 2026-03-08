@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { QUIZ_SECTIONS, type QuizCategory } from "@/lib/quiz-definitions";
 import { useTaskPoll } from "@/lib/use-task-poll";
@@ -19,17 +19,23 @@ type QuizAnswers = Record<string, Record<string, string | string[]>>;
 
 interface QuizFlowProps {
   initialAnswers: QuizAnswers;
-  hasSelfie: boolean;
+  initialSelfieCount: number;
 }
 
-export default function QuizFlow({ initialAnswers, hasSelfie }: QuizFlowProps) {
+export default function QuizFlow({ initialAnswers, initialSelfieCount }: QuizFlowProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswers>(initialAnswers);
   const [saving, setSaving] = useState(false);
-  const [selfieComplete, setSelfieComplete] = useState(hasSelfie);
+  const [selfieCount, setSelfieCount] = useState(initialSelfieCount);
+  const [analyzedCount, setAnalyzedCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const { isWaiting: generating, isCompleted: profileReady, isFailed: profileFailed, startPolling, task: profileTask } = useTaskPoll();
+
+  const handleSelfieCountChange = useCallback((count: number, analyzed: number) => {
+    setSelfieCount(count);
+    setAnalyzedCount(analyzed);
+  }, []);
 
   const isSelfieStep = currentStep === SECTION_CATEGORIES.length;
   const section = !isSelfieStep ? QUIZ_SECTIONS[currentStep] : null;
@@ -140,7 +146,7 @@ export default function QuizFlow({ initialAnswers, hasSelfie }: QuizFlowProps) {
 
       {isSelfieStep && (
         <SelfieUpload
-          onAnalysisComplete={() => setSelfieComplete(true)}
+          onSelfieCountChange={handleSelfieCountChange}
         />
       )}
 
@@ -190,10 +196,10 @@ export default function QuizFlow({ initialAnswers, hasSelfie }: QuizFlowProps) {
                     </svg>
                     {profileTask?.status === "processing" ? "AI is generating your profile..." : "Waiting for AI..."}
                   </span>
-                ) : selfieComplete ? (
-                  "Generate Profile"
+                ) : selfieCount > 0 ? (
+                  `Generate Profile${analyzedCount < selfieCount ? " (some photos still analyzing)" : ""}`
                 ) : (
-                  "Skip Selfie & Generate Profile"
+                  "Skip Photos & Generate Profile"
                 )}
               </button>
             </>

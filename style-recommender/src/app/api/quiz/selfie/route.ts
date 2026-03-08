@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET — fetch user's selfie uploads
+// GET — fetch user's selfie uploads with task status for pending analyses
 export async function GET() {
   try {
     const user = await getUser();
@@ -66,9 +66,28 @@ export async function GET() {
     const selfies = await prisma.selfieUpload.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
+      take: 5,
     });
 
-    return NextResponse.json(selfies);
+    // For selfies still missing results, look up their task status
+    const pendingIds = selfies
+      .filter((s) => !s.analysisResultClaude && !s.analysisResultGemini)
+      .map((s) => s.id);
+
+    const tasks =
+      pendingIds.length > 0
+        ? await prisma.styleTask.findMany({
+            where: { targetId: { in: pendingIds }, type: "selfie_analysis" },
+            orderBy: { createdAt: "desc" },
+          })
+        : [];
+
+    const selfiesWithStatus = selfies.map((s) => ({
+      ...s,
+      taskStatus: tasks.find((t) => t.targetId === s.id)?.status ?? null,
+    }));
+
+    return NextResponse.json(selfiesWithStatus);
   } catch (error) {
     console.error("Error fetching selfies:", error);
     return NextResponse.json({ error: "Failed to fetch selfies" }, { status: 500 });
