@@ -1,0 +1,28 @@
+{
+  "name": "fashion-pipeline",
+  "version": "1.0.0",
+  "description": "Fashion image scraping, classification, and enrichment pipeline",
+  "type": "module",
+  "scripts": {
+    "scrape": "tsx src/scrape.ts",
+    "scrape:looks": "tsx src/scrape-looks.ts",
+    "scrape:brands": "tsx src/scrape-brands.ts",
+    "enrich": "tsx src/enrich.ts",
+    "classify": "tsx src/classify-looks-strict.ts",
+    "stats": "tsx src/stats.ts",
+    "export-csv": "tsx src/export-csv.ts",
+    "quiz-manifest": "tsx src/generate-quiz-manifest.ts"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "playwright": "^1.58.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
