@@ -34,12 +34,13 @@ interface StyleDiscoveryProps {
 
 // --- Constants ---
 
-const PHASE_1_ROUNDS = 3;
+const PHASE_1_ROUNDS = 2;
+const PHASE_1_IMAGES_PER_ROUND = 9;
 const PHASE_2_ROUNDS = 2;
 const PHASE_3_ROUNDS = 3; // round-robin of top 3
 
 const PHASE_INFO: Record<Phase, { label: string; instruction: string; max: number; min: number }> = {
-  1: { label: "Discovery", instruction: "Pick the looks that catch your eye", max: 3, min: 0 },
+  1: { label: "Discovery", instruction: "Pick the looks that catch your eye", max: 5, min: 0 },
   2: { label: "Narrowing", instruction: "Which would you actually wear?", max: 2, min: 1 },
   3: { label: "Finals", instruction: "You have to pick one", max: 1, min: 1 },
 };
@@ -75,7 +76,7 @@ function pickImage(
   return { filename: img.filename, aesthetic };
 }
 
-/** Build Phase 1 rounds: 3 rounds × 6 images, covering all aesthetics */
+/** Build Phase 1 rounds: 2 rounds × 9 images, covering all aesthetics */
 function buildPhase1(manifest: PoolManifest): { rounds: DiscoveryImage[][]; used: Set<string> } {
   const aesthetics = shuffle(Object.keys(manifest.pools));
   const rounds: DiscoveryImage[][] = [];
@@ -83,7 +84,7 @@ function buildPhase1(manifest: PoolManifest): { rounds: DiscoveryImage[][]; used
 
   for (let r = 0; r < PHASE_1_ROUNDS; r++) {
     const round: DiscoveryImage[] = [];
-    for (let i = r * 6; i < (r + 1) * 6 && i < aesthetics.length; i++) {
+    for (let i = r * PHASE_1_IMAGES_PER_ROUND; i < (r + 1) * PHASE_1_IMAGES_PER_ROUND && i < aesthetics.length; i++) {
       const img = pickImage(manifest.pools, aesthetics[i], used);
       if (img) {
         round.push(img);
