@@ -5,6 +5,8 @@ import { useState } from "react";
 import { ColorSeasonCard } from "./ColorSeasonCard";
 import { BrandList } from "./BrandList";
 import { MoodBoard } from "./MoodBoard";
+import { KeyPiecesList } from "./KeyPiecesList";
+import { StyleInspirationStrip } from "./StyleInspirationStrip";
 
 interface ProfileData {
   styleArchetype?: string;
@@ -33,10 +35,6 @@ interface ProfileData {
   }>;
   styleDos?: string[];
   styleDonts?: string[];
-  accessories?: Array<{
-    type: string;
-    recommendation: string;
-  }>;
 }
 
 interface ProfileViewProps {
@@ -52,19 +50,6 @@ interface ProfileViewProps {
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
-function priorityBadge(priority: string) {
-  switch (priority) {
-    case "essential":
-      return "bg-emerald-900/40 text-emerald-300 border-emerald-800";
-    case "recommended":
-      return "bg-sky-900/40 text-sky-300 border-sky-800";
-    case "nice-to-have":
-      return "bg-zinc-800 text-zinc-400 border-zinc-700";
-    default:
-      return "bg-zinc-800 text-zinc-400 border-zinc-700";
-  }
-}
-
 export function ProfileView({
   userName,
   profileData,
@@ -79,11 +64,6 @@ export function ProfileView({
 
   // Use Claude's analysis as primary, fall back to Gemini
   const primary: ProfileData = profileData.claude || profileData.gemini || {};
-  const secondary: ProfileData | undefined = profileData.claude
-    ? profileData.gemini
-    : undefined;
-
-  const hasBothModels = !!(profileData.claude && profileData.gemini);
 
   async function handleDownloadPDF() {
     setDownloading(true);
@@ -189,26 +169,7 @@ export function ProfileView({
           <h3 className="mb-4 text-lg font-semibold text-white">
             Wardrobe Essentials
           </h3>
-          <div className="space-y-2">
-            {primary.keyPieces.map((piece, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-900/70 p-4"
-              >
-                <span
-                  className={`mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${priorityBadge(piece.priority)}`}
-                >
-                  {piece.priority}
-                </span>
-                <div>
-                  <h4 className="font-medium text-white">{piece.item}</h4>
-                  <p className="mt-0.5 text-sm text-zinc-300">
-                    {piece.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <KeyPiecesList pieces={primary.keyPieces} />
         </section>
       )}
 
@@ -219,6 +180,9 @@ export function ProfileView({
           <h3 className="mb-4 text-lg font-semibold text-white">
             Style Guidelines
           </h3>
+          {primary.topAesthetics && primary.topAesthetics.length > 0 && (
+            <StyleInspirationStrip aesthetics={primary.topAesthetics} />
+          )}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {primary.styleDos && primary.styleDos.length > 0 && (
               <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-5">
@@ -257,139 +221,6 @@ export function ProfileView({
                 </ul>
               </div>
             )}
-          </div>
-        </section>
-      )}
-
-      {/* Accessories */}
-      {primary.accessories && primary.accessories.length > 0 && (
-        <section>
-          <h3 className="mb-4 text-lg font-semibold text-white">
-            Accessory Recommendations
-          </h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {primary.accessories.map((acc, i) => (
-              <div
-                key={i}
-                className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-4"
-              >
-                <h4 className="mb-1 text-sm font-semibold text-zinc-300">
-                  {acc.type}
-                </h4>
-                <p className="text-sm text-zinc-300">{acc.recommendation}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Claude vs Gemini Comparison */}
-      {hasBothModels && secondary && (
-        <section>
-          <h3 className="mb-4 text-lg font-semibold text-white">
-            AI Analysis Comparison
-          </h3>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-6">
-            <p className="mb-4 text-sm text-zinc-400">
-              Your profile was analyzed by both Claude and Gemini. Here is
-              where they agreed and diverged.
-            </p>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {/* Claude Column */}
-              <div>
-                <h4 className="mb-3 rounded-lg bg-violet-900/20 px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-wider text-violet-400">
-                  Claude
-                </h4>
-                <div className="space-y-2 text-sm">
-                  {primary.styleArchetype && (
-                    <div>
-                      <span className="text-zinc-400">Archetype: </span>
-                      <span className="text-zinc-200">
-                        {primary.styleArchetype}
-                      </span>
-                    </div>
-                  )}
-                  {primary.styleDos && primary.styleDos.length > 0 && (
-                    <div>
-                      <span className="text-zinc-400">Top tip: </span>
-                      <span className="text-zinc-200">
-                        {primary.styleDos[0]}
-                      </span>
-                    </div>
-                  )}
-                  {primary.brandsToExplore &&
-                    primary.brandsToExplore.length > 0 && (
-                      <div>
-                        <span className="text-zinc-400">Top brands: </span>
-                        <span className="text-zinc-200">
-                          {primary.brandsToExplore
-                            .slice(0, 3)
-                            .map((b) => b.name)
-                            .join(", ")}
-                        </span>
-                      </div>
-                    )}
-                </div>
-              </div>
-
-              {/* Gemini Column */}
-              <div>
-                <h4 className="mb-3 rounded-lg bg-sky-900/20 px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-wider text-sky-400">
-                  Gemini
-                </h4>
-                <div className="space-y-2 text-sm">
-                  {secondary.styleArchetype && (
-                    <div>
-                      <span className="text-zinc-400">Archetype: </span>
-                      <span className="text-zinc-200">
-                        {secondary.styleArchetype}
-                      </span>
-                    </div>
-                  )}
-                  {secondary.styleDos && secondary.styleDos.length > 0 && (
-                    <div>
-                      <span className="text-zinc-400">Top tip: </span>
-                      <span className="text-zinc-200">
-                        {secondary.styleDos[0]}
-                      </span>
-                    </div>
-                  )}
-                  {secondary.brandsToExplore &&
-                    secondary.brandsToExplore.length > 0 && (
-                      <div>
-                        <span className="text-zinc-400">Top brands: </span>
-                        <span className="text-zinc-200">
-                          {secondary.brandsToExplore
-                            .slice(0, 3)
-                            .map((b) => b.name)
-                            .join(", ")}
-                        </span>
-                      </div>
-                    )}
-                </div>
-              </div>
-            </div>
-
-            {/* Agreement check */}
-            {primary.styleArchetype &&
-              secondary.styleArchetype &&
-              primary.styleArchetype.toLowerCase() ===
-                secondary.styleArchetype.toLowerCase() && (
-                <p className="mt-4 rounded-lg bg-emerald-900/20 px-4 py-2 text-center text-sm text-emerald-400">
-                  Both models agree on your style archetype &mdash; high
-                  confidence result.
-                </p>
-              )}
-            {primary.styleArchetype &&
-              secondary.styleArchetype &&
-              primary.styleArchetype.toLowerCase() !==
-                secondary.styleArchetype.toLowerCase() && (
-                <p className="mt-4 rounded-lg bg-amber-900/20 px-4 py-2 text-center text-sm text-amber-400">
-                  The models identified different archetypes, suggesting your
-                  style spans multiple categories.
-                </p>
-              )}
           </div>
         </section>
       )}

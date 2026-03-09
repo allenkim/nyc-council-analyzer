@@ -41,6 +41,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Keyword search across name, category, description
+    const q = request.nextUrl.searchParams.get("q");
+    if (q) {
+      const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+      catalog.items = catalog.items.filter(
+        (item: { name?: string; aiCategory?: string; aiDescription?: string }) => {
+          const text = `${item.name || ""} ${item.aiCategory || ""} ${item.aiDescription || ""}`.toLowerCase();
+          return terms.every((t: string) => text.includes(t));
+        }
+      );
+    }
+
     // Limit results
     const limit = parseInt(request.nextUrl.searchParams.get("limit") || "5", 10);
     catalog.items = catalog.items.slice(0, limit);
