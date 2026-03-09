@@ -68,10 +68,11 @@ const BRAND_URLS: Record<string, string> = {
 
 function getBrandUrl(name: string): string | null {
   if (BRAND_URLS[name]) return BRAND_URLS[name];
-  // Try case-insensitive match
+  // Try case-insensitive match, then partial match (e.g. "Lululemon (ABC Pants)" → "Lululemon")
   const lower = name.toLowerCase();
   for (const [key, url] of Object.entries(BRAND_URLS)) {
-    if (key.toLowerCase() === lower) return url;
+    const keyLower = key.toLowerCase();
+    if (keyLower === lower || lower.startsWith(keyLower) || lower.includes(keyLower)) return url;
   }
   return null;
 }
