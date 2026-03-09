@@ -141,9 +141,9 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
 
     if (current.includes(filename)) {
       next = current.filter((f) => f !== filename);
-    } else if (current.length >= 2) {
+    } else if (current.length >= 3) {
       // Already at max — replace the oldest selection
-      next = [current[1], filename];
+      next = [...current.slice(1), filename];
     } else {
       next = [...current, filename];
     }
@@ -267,7 +267,6 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
   const round = manifest.rounds[currentRound];
   const roundSelections = selections[String(currentRound)] || [];
   const progress = ((currentRound + 1) / totalRounds) * 100;
-  const hasSelection = roundSelections.length > 0;
 
   return (
     <div className="space-y-6">
@@ -278,7 +277,7 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
             Round {currentRound + 1} of {totalRounds}
           </span>
           <span className="text-sm text-zinc-500">
-            Pick 1-2 favorites
+            Pick your favorites, or skip
           </span>
         </div>
 
@@ -291,8 +290,8 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
         </div>
       </div>
 
-      {/* 2x2 image grid */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Image grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {round.images.map((img) => {
           const isSelected = roundSelections.includes(img.filename);
           const imageSrc = `${basePath}/api/images/fashion/looks/images/${img.filename}`;
@@ -349,8 +348,7 @@ export default function StyleDiscovery({ onChange, initialValue }: StyleDiscover
         <button
           type="button"
           onClick={handleNext}
-          disabled={!hasSelection}
-          className="px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-indigo-600 hover:bg-indigo-700 text-white"
+          className="px-5 py-2.5 rounded-lg font-medium transition-colors bg-indigo-600 hover:bg-indigo-700 text-white"
         >
           {currentRound < totalRounds - 1 ? "Next" : "See Results"}
         </button>

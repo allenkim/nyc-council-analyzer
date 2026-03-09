@@ -52,11 +52,10 @@ export const QUIZ_SECTIONS: QuizSection[] = [
         { label: "Regular Fit", value: "regular", imageQuery: "japanese mens regular fit outfit fashion" },
         { label: "Relaxed / Oversized", value: "relaxed", imageQuery: "korean mens oversized relaxed fit outfit fashion" },
       ]},
-      { id: "topSize", question: "Your typical top size?", type: "select", options: [
+      { id: "topSize", question: "Your typical top size(s)?", type: "multiselect", options: [
         { label: "XS", value: "xs" }, { label: "S", value: "s" }, { label: "M", value: "m" },
         { label: "L", value: "l" }, { label: "XL", value: "xl" }, { label: "XXL", value: "xxl" },
       ]},
-      { id: "bottomSize", question: "Your typical bottom size (waist)?", type: "text", placeholder: "e.g., 32" },
       { id: "shoeSize", question: "Your shoe size?", type: "text", placeholder: "e.g., 10 US" },
     ],
   },
@@ -66,12 +65,11 @@ export const QUIZ_SECTIONS: QuizSection[] = [
     description: "Tell us about your daily life and how you dress for it.",
     questions: [
       { id: "occupation", question: "What's your occupation or work environment?", type: "text", placeholder: "e.g., Software engineer, WFH" },
-      { id: "dressCode", question: "What's your typical dress code?", type: "select", options: [
+      { id: "dressCode", question: "What dress codes apply to your life?", type: "multiselect", options: [
         { label: "Very casual (sweats, tees)", value: "very-casual" },
         { label: "Smart casual", value: "smart-casual" },
         { label: "Business casual", value: "business-casual" },
         { label: "Business formal", value: "business-formal" },
-        { label: "Mixed / depends on day", value: "mixed" },
       ]},
       { id: "climate", question: "What climate do you live in?", type: "select", options: [
         { label: "Hot year-round", value: "hot" },
@@ -134,20 +132,11 @@ export const QUIZ_SECTIONS: QuizSection[] = [
         { label: "Nylon / Tech", value: "technical", imageQuery: "technical nylon fabric texture close up" },
         { label: "Suede", value: "suede", imageQuery: "suede leather texture swatch close up" },
       ]},
-      { id: "avoidMaterials", question: "Materials you avoid", type: "visual-grid", options: [
-        { label: "Polyester", value: "polyester", imageQuery: "polyester fabric texture swatch close up" },
-        { label: "Leather", value: "leather", imageQuery: "leather texture swatch close up" },
-        { label: "Wool (itchy)", value: "wool", imageQuery: "wool fabric texture swatch close up" },
-        { label: "Silk", value: "silk", imageQuery: "silk fabric texture swatch close up" },
-        { label: "None — I'm open", value: "none" },
-      ]},
-      { id: "materialNotes", question: "Any specific material preferences?", type: "text", placeholder: "e.g., Only merino wool, no synthetic blends (optional)" },
-      { id: "budget", question: "What's your typical budget for a single item?", type: "select", options: [
+      { id: "budget", question: "What budget ranges do you shop in?", type: "multiselect", options: [
         { label: "Under $50", value: "budget" },
-        { label: "$50-$150", value: "mid" },
-        { label: "$150-$300", value: "premium" },
+        { label: "$50–$150", value: "mid" },
+        { label: "$150–$300", value: "premium" },
         { label: "$300+", value: "luxury" },
-        { label: "Depends on the piece", value: "varies" },
       ]},
     ],
   },
